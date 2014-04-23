@@ -8,7 +8,8 @@ require "Window"
 -----------------------------------------------------------------------------------------------
 -- GeminiColor Module Definition
 -----------------------------------------------------------------------------------------------
-local GeminiColor = {} 
+local GeminiColor = {}
+local GeminiColorEditor = {}
  
 -----------------------------------------------------------------------------------------------
 -- Constants
@@ -16,29 +17,52 @@ local GeminiColor = {}
 -- e.g. local kiExampleVariableMax = 999
 
 local ktColors = {
-	IndianRed = "CD5C5C",	LightCoral = "F08080",	Salmon = "FA8072",	DarkSalmon = "E9967A",	Red = "FF0000",	Crimson = "DC143C",
-	FireBrick = "B22222",	DarkRed = "8B0000",	Pink = "FFC0CB",	LightPink = "FFB6C1",	HotPink = "FF69B4",	DeepPink = "FF1493",
-	MediumVioletRed = "C71585",	PaleVioletRed = "DB7093",	LightSalmon = "FFA07A",	Coral = "FF7F50",	Tomato = "FF6347",	OrangeRed = "FF4500",
-	DarkOrange = "FF8C00",	Orange = "FFA500",	Gold = "FFD700",	Yellow = "FFFF00",	LightYellow = "FFFFE0",	LemonChiffon = "FFFACD",
-	LightGoldenrodYellow = "FAFAD2",	PapayaWhip = "FFEFD5",	Moccasin = "FFE4B5",	PeachPuff = "FFDAB9",	PaleGoldenrod = "EEE8AA",	Khaki = "F0E68C",
-	DarkKhaki = "BDB76B",	Lavender = "E6E6FA",	Thistle = "D8BFD8",	Plum = "DDA0DD",	Violet = "EE82EE",	Orchid = "DA70D6",
-	Magenta = "FF00FF",	MediumOrchid = "BA55D3",	MediumPurple = "9370DB",	BlueViolet = "8A2BE2",	DarkViolet = "9400D3",	DarkOrchid = "9932CC",
-	DarkMagenta = "8B008B",	Purple = "800080",	Indigo = "4B0082",	DarkSlateBlue = "483D8B",	SlateBlue = "6A5ACD",	MediumSlateBlue = "7B68EE",
-	GreenYellow = "ADFF2F",	Chartreuse = "7FFF00",	LawnGreen = "7CFC00",	Lime = "00FF00",	LimeGreen = "32CD32",	PaleGreen = "98FB98",
-	LightGreen = "90EE90",	MediumSpringGreen = "00FA9A",	SpringGreen = "00FF7F",	MediumSeaGreen = "3CB371",	SeaGreen = "2E8B57",	ForestGreen = "228B22",
-	Green = "008000",	DarkGreen = "006400",	YellowGreen = "9ACD32",	OliveDrab = "6B8E23",	Olive = "808000",	DarkOliveGreen = "556B2F",
-	MediumAquamarine = "66CDAA",	DarkSeaGreen = "8FBC8F",	LightSeaGreen = "20B2AA",	DarkCyan = "008B8B",	Teal = "008080",	Cyan = "00FFFF",
-	LightCyan = "E0FFFF",	PaleTurquoise = "AFEEEE",	Aquamarine = "7FFFD4",	Turquoise = "40E0D0",	MediumTurquoise = "48D1CC",	DarkTurquoise = "00CED1",
-	CadetBlue = "5F9EA0",	SteelBlue = "4682B4",	LightSteelBlue = "B0C4DE",	PowderBlue = "B0E0E6",	LightBlue = "ADD8E6",	SkyBlue = "87CEEB",
-	LightSkyBlue = "87CEFA",	DeepSkyBlue = "00BFFF",	DodgerBlue = "1E90FF",	CornflowerBlue = "6495ED",	RoyalBlue = "4169E1",	Blue = "0000FF",
-	MediumBlue = "0000CD",	DarkBlue = "00008B",	Navy = "000080",	MidnightBlue = "191970",	Cornsilk = "FFF8DC",	BlanchedAlmond = "FFEBCD",
-	Bisque = "FFE4C4",	NavajoWhite = "FFDEAD",	Wheat = "F5DEB3",	BurlyWood = "DEB887",	Tan = "D2B48C",	RosyBrown = "BC8F8F",
-	SandyBrown = "F4A460",	Goldenrod = "DAA520",	DarkGoldenrod = "B8860B",	Peru = "CD853F",	Chocolate = "D2691E",	SaddleBrown = "8B4513",
-	Sienna = "A0522D",	Brown = "A52A2A",	Maroon = "800000",	White = "FFFFFF",	Snow = "FFFAFA",	Honeydew = "F0FFF0",
-	MintCream = "F5FFFA",	Azure = "F0FFFF",	AliceBlue = "F0F8FF",	GhostWhite = "F8F8FF",	WhiteSmoke = "F5F5F5",	Seashell = "FFF5EE",
-	Beige = "F5F5DC",	OldLace = "FDF5E6",	FloralWhite = "FFFAF0",	Ivory = "FFFFF0",	AntiqueWhite = "FAEBD7",	Linen = "FAF0E6",
-	LavenderBlush = "FFF0F5",	MistyRose = "FFE4E1",	Gainsboro = "DCDCDC",	LightGrey = "D3D3D3",	Silver = "C0C0C0",	DarkGray = "A9A9A9",
-	Gray = "808080",	DimGray = "696969",	LightSlateGray = "778899",	SlateGray = "708090",	DarkSlateGray = "2F4F4F",	Black = "000000",
+	{ colorName = "IndianRed", strColor = "CD5C5C"}, { colorName = "LightCoral", strColor = "F08080"}, { colorName = "Salmon", strColor = "FA8072"},
+	{ colorName = "DarkSalmon", strColor = "E9967A"}, { colorName = "Red", strColor = "FF0000"}, { colorName = "Crimson", strColor = "DC143C"},
+	{ colorName = "FireBrick", strColor = "B22222"}, { colorName = "DarkRed", strColor = "8B0000"}, { colorName = "Pink", strColor = "FFC0CB"},
+	{ colorName = "LightPink", strColor = "FFB6C1"}, { colorName = "HotPink", strColor = "FF69B4"}, { colorName = "DeepPink", strColor = "FF1493"},
+	{ colorName = "MediumVioletRed", strColor = "C71585"}, { colorName = "PaleVioletRed", strColor = "DB7093"}, { colorName = "LightSalmon", strColor = "FFA07A"},
+	{ colorName = "Coral", strColor = "FF7F50"}, { colorName = "Tomato", strColor = "FF6347"}, { colorName = "OrangeRed", strColor = "FF4500"},
+	{ colorName = "DarkOrange", strColor = "FF8C00"}, { colorName = "Orange", strColor = "FFA500"}, { colorName = "Gold", strColor = "FFD700"},
+	{ colorName = "Yellow", strColor = "FFFF00"}, { colorName = "LightYellow", strColor = "FFFFE0"}, { colorName = "LemonChiffon", strColor = "FFFACD"},
+	{ colorName = "LightGoldenrodYellow", strColor = "FAFAD2"}, { colorName = "PapayaWhip", strColor = "FFEFD5"}, { colorName = "Moccasin", strColor = "FFE4B5"},
+	{ colorName = "PeachPuff", strColor = "FFDAB9"}, { colorName = "PaleGoldenrod", strColor = "EEE8AA"}, { colorName = "Khaki", strColor = "F0E68C"},
+	{ colorName = "DarkKhaki", strColor = "BDB76B"}, { colorName = "Lavender", strColor = "E6E6FA"}, { colorName = "Thistle", strColor = "D8BFD8"},
+	{ colorName = "Plum", strColor = "DDA0DD"}, { colorName = "Violet", strColor = "EE82EE"}, { colorName = "Orchid", strColor = "DA70D6"},
+	{ colorName = "Magenta", strColor = "FF00FF"}, { colorName = "MediumOrchid", strColor = "BA55D3"}, { colorName = "MediumPurple", strColor = "9370DB"},
+	{ colorName = "BlueViolet", strColor = "8A2BE2"}, { colorName = "DarkViolet", strColor = "9400D3"}, { colorName = "DarkOrchid", strColor = "9932CC"},
+	{ colorName = "DarkMagenta", strColor = "8B008B"}, { colorName = "Purple", strColor = "800080"}, { colorName = "Indigo", strColor = "4B0082"},
+	{ colorName = "DarkSlateBlue", strColor = "483D8B"}, { colorName = "SlateBlue", strColor = "6A5ACD"}, { colorName = "MediumSlateBlue", strColor = "7B68EE"},
+	{ colorName = "GreenYellow", strColor = "ADFF2F"}, { colorName = "Chartreuse", strColor = "7FFF00"}, { colorName = "LawnGreen", strColor = "7CFC00"},
+	{ colorName = "Lime", strColor = "00FF00"}, { colorName = "LimeGreen", strColor = "32CD32"}, { colorName = "PaleGreen", strColor = "98FB98"},
+	{ colorName = "LightGreen", strColor = "90EE90"}, { colorName = "MediumSpringGreen", strColor = "00FA9A"}, { colorName = "SpringGreen", strColor = "00FF7F"},
+	{ colorName = "MediumSeaGreen", strColor = "3CB371"}, { colorName = "SeaGreen", strColor = "2E8B57"}, { colorName = "ForestGreen", strColor = "228B22"},
+	{ colorName = "Green", strColor = "008000"}, { colorName = "DarkGreen", strColor = "006400"}, { colorName = "YellowGreen", strColor = "9ACD32"},
+	{ colorName = "OliveDrab", strColor = "6B8E23"}, { colorName = "Olive", strColor = "808000"}, { colorName = "DarkOliveGreen", strColor = "556B2F"},
+	{ colorName = "MediumAquamarine", strColor = "66CDAA"}, { colorName = "DarkSeaGreen", strColor = "8FBC8F"}, { colorName = "LightSeaGreen", strColor = "20B2AA"},
+	{ colorName = "DarkCyan", strColor = "008B8B"}, { colorName = "Teal", strColor = "008080"}, { colorName = "Cyan", strColor = "00FFFF"},
+	{ colorName = "LightCyan", strColor = "E0FFFF"}, { colorName = "PaleTurquoise", strColor = "AFEEEE"}, { colorName = "Aquamarine", strColor = "7FFFD4"},
+	{ colorName = "Turquoise", strColor = "40E0D0"}, { colorName = "MediumTurquoise", strColor = "48D1CC"}, { colorName = "DarkTurquoise", strColor = "00CED1"},
+	{ colorName = "CadetBlue", strColor = "5F9EA0"}, { colorName = "SteelBlue", strColor = "4682B4"}, { colorName = "LightSteelBlue", strColor = "B0C4DE"},
+	{ colorName = "PowderBlue", strColor = "B0E0E6"}, { colorName = "LightBlue", strColor = "ADD8E6"}, { colorName = "SkyBlue", strColor = "87CEEB"},
+	{ colorName = "LightSkyBlue", strColor = "87CEFA"}, { colorName = "DeepSkyBlue", strColor = "00BFFF"}, { colorName = "DodgerBlue", strColor = "1E90FF"},
+	{ colorName = "CornflowerBlue", strColor = "6495ED"}, { colorName = "RoyalBlue", strColor = "4169E1"}, { colorName = "Blue", strColor = "0000FF"},
+	{ colorName = "MediumBlue", strColor = "0000CD"}, { colorName = "DarkBlue", strColor = "00008B"}, { colorName = "Navy", strColor = "000080"},
+	{ colorName = "MidnightBlue", strColor = "191970"}, { colorName = "Cornsilk", strColor = "FFF8DC"}, { colorName = "BlanchedAlmond", strColor = "FFEBCD"},
+	{ colorName = "Bisque", strColor = "FFE4C4"}, { colorName = "NavajoWhite", strColor = "FFDEAD"}, { colorName = "Wheat", strColor = "F5DEB3"},
+	{ colorName = "BurlyWood", strColor = "DEB887"}, { colorName = "Tan", strColor = "D2B48C"}, { colorName = "RosyBrown", strColor = "BC8F8F"},
+	{ colorName = "SandyBrown", strColor = "F4A460"}, { colorName = "Goldenrod", strColor = "DAA520"}, { colorName = "DarkGoldenrod", strColor = "B8860B"},
+	{ colorName = "Peru", strColor = "CD853F"}, { colorName = "Chocolate", strColor = "D2691E"}, { colorName = "SaddleBrown", strColor = "8B4513"},
+	{ colorName = "Sienna", strColor = "A0522D"}, { colorName = "Brown", strColor = "A52A2A"}, { colorName = "Maroon", strColor = "800000"},
+	{ colorName = "White", strColor = "FFFFFF"}, { colorName = "Snow", strColor = "FFFAFA"}, { colorName = "Honeydew", strColor = "F0FFF0"},
+	{ colorName = "MintCream", strColor = "F5FFFA"}, { colorName = "Azure", strColor = "F0FFFF"}, { colorName = "AliceBlue", strColor = "F0F8FF"},
+	{ colorName = "GhostWhite", strColor = "F8F8FF"}, { colorName = "WhiteSmoke", strColor = "F5F5F5"}, { colorName = "Seashell", strColor = "FFF5EE"},
+	{ colorName = "Beige", strColor = "F5F5DC"}, { colorName = "OldLace", strColor = "FDF5E6"}, { colorName = "FloralWhite", strColor = "FFFAF0"},
+	{ colorName = "Ivory", strColor = "FFFFF0"}, { colorName = "AntiqueWhite", strColor = "FAEBD7"}, { colorName = "Linen", strColor = "FAF0E6"},
+	{ colorName = "LavenderBlush", strColor = "FFF0F5"}, { colorName = "MistyRose", strColor = "FFE4E1"}, { colorName = "Gainsboro", strColor = "DCDCDC"},
+	{ colorName = "LightGrey", strColor = "D3D3D3"}, { colorName = "Silver", strColor = "C0C0C0"}, { colorName = "DarkGray", strColor = "A9A9A9"},
+	{ colorName = "Gray", strColor = "808080"}, { colorName = "DimGray", strColor = "696969"}, { colorName = "LightSlateGray", strColor = "778899"},
+	{ colorName = "SlateGray", strColor = "708090"}, { colorName = "DarkSlateGray", strColor = "2F4F4F"}, { colorName = "Black", strColor = "000000"},
 }
  
 -----------------------------------------------------------------------------------------------
@@ -49,20 +73,21 @@ function GeminiColor:new(o)
     setmetatable(o, self)
     self.__index = self 
 
-    -- initialize variables here
-	o.RGB = {
-		R = 1,
-		G = 1,
-		B = 1
-	}
-	o.HSL = {
-		H = 1,
-		S = 1,
-		L = 1,
-	}
-	
+    -- initialize variables here	
     return o
 end
+
+GeminiColorEditor.tRGB = {
+	R = 1,
+	G = 1,
+	B = 1
+}
+GeminiColorEditor.tHSL = {
+	H = 1,
+	S = 1,
+	L = 1,
+}
+GeminiColorEditor.strHex = "ffffffff"
 
 function GeminiColor:Init()
 	local bHasConfigureFunction = false
@@ -78,12 +103,11 @@ end
 -- GeminiColor OnLoad
 -----------------------------------------------------------------------------------------------
 function GeminiColor:OnLoad()
-	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor.xml")
-	self.wndMain = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
-	self.wndSatVal = self.wndMain:FindChild:("wnd_WidgetContainer:wnd_SatValue")
-	self.wndHue = self.wndMain:FindChild:("wnd_WidgetContainer:wnd_Hue:SliderBar")
-	self.wndCurrColor
-	self.wndCurrColor
+	GeminiColorEditor.xmlDoc = XmlDoc.CreateFromFile("GeminiColor.xml")
+	self.wndMain = Apollo.LoadForm(GeminiColorEditor.xmlDoc, "GeminiChooserForm", nil, GeminiColorEditor)
+	self.wndSatVal = self.wndMain:FindChild:("wnd_ColorPicker:wnd_WidgetContainer:wnd_SatValue")
+	self.wndHue = self.wndMain:FindChild("wnd_ColorPicker:wnd_WidgetContainer:wnd_Hue:SliderBar")
+	self.wndDD = self.wndMain:FindChild("ddList_PresetColors:wnd_ColorDD")
 	self.wndMain:Show(false, true)
 end
 
@@ -91,6 +115,18 @@ end
 -- GeminiColor Functions
 -----------------------------------------------------------------------------------------------
 -- Define general functions here
+
+function GeminiColor:ShowColorPicker(tAddon, strCallBack)
+	self.tAddon = tAddon
+	self.strCallBack = strCallBack
+	self.wndMain:Show(true)
+end
+
+function GeminiColor:GetColorList()
+	-- returns a table containing sub entries for all X11 colors.
+	-- colorName, strColor
+	return ktColors
+end
 
 function GeminiColor:RGBAPercToHex(r, g, b, a)
 	if not(a) then a = 1 end
@@ -121,11 +157,12 @@ end
 function GeminiColor:RGBtoRGBperc(r,g,b,a)
 	return r / 255, g / 255, b / 255, a / 255
 end
-	-----------------------------------------------------------------------------------------------
-	-- Color Utility Functions
-	-- From https://github.com/EmmanuelOga/columns/blob/master/utils/color.lua
-	-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+-- Color Utility Functions
+-- Adapted From https://github.com/EmmanuelOga/columns/blob/master/utils/color.lua
+-----------------------------------------------------------------------------------------------
 
+function GeminiColor:RGBtoHSL(r, g, b, a)
 	--[[
 	 * Converts an RGB color value to HSL. Conversion formula
 	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
@@ -138,32 +175,32 @@ end
 	 * @return  Array           The HSL representation
 	]]
 
-function GeminiColor:rgbToHsl(r, g, b, a)
-  r, g, b = r / 255, g / 255, b / 255
+	r, g, b = r / 255, g / 255, b / 255
 
-  local max, min = math.max(r, g, b), math.min(r, g, b)
-  local h, s, l
+	local max, min = math.max(r, g, b), math.min(r, g, b)
+	local h, s, l
 
-  l = (max + min) / 2
+	l = (max + min) / 2
 
-  if max == min then
-    h, s = 0, 0 -- achromatic
-  else
-    local d = max - min
-    local s
-    if l > 0.5 then s = d / (2 - max - min) else s = d / (max + min) end
-    if max == r then
-      h = (g - b) / d
-      if g < b then h = h + 6 end
-    elseif max == g then h = (b - r) / d + 2
-    elseif max == b then h = (r - g) / d + 4
-    end
-    h = h / 6
-  end
+	if max == min then
+		h, s = 0, 0 -- achromatic
+	else
+		local d = max - min
+		local s
+		if l > 0.5 then s = d / (2 - max - min) else s = d / (max + min) end
+			if max == r then
+			h = (g - b) / d
+				if g < b then h = h + 6 end
+			elseif max == g then h = (b - r) / d + 2
+			elseif max == b then h = (r - g) / d + 4
+		end
+		h = h / 6
+	end
 
-  return h, s, l, a or 255
+	return h, s, l, a or 255
 end
 
+function GeminiColor:HSLtoRGB(h, s, l, a)
 	--[[
 	 * Converts an HSL color value to RGB. Conversion formula
 	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
@@ -175,100 +212,97 @@ end
 	 * @param   Number  l       The lightness
 	 * @return  Array           The RGB representation
 	]]
+	local r, g, b
 
-function GeminiColor:hslToRgb(h, s, l, a)
-  local r, g, b
-
-  if s == 0 then
-    r, g, b = l, l, l -- achromatic
-  else
-    function hue2rgb(p, q, t)
-      if t < 0   then t = t + 1 end
-      if t > 1   then t = t - 1 end
-      if t < 1/6 then return p + (q - p) * 6 * t end
-      if t < 1/2 then return q end
-      if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
-      return p
-    end
-
-    local q
-    if l < 0.5 then q = l * (1 + s) else q = l + s - l * s end
-    local p = 2 * l - q
-
-    r = hue2rgb(p, q, h + 1/3)
-    g = hue2rgb(p, q, h)
-    b = hue2rgb(p, q, h - 1/3)
-  end
+	if s == 0 then
+		r, g, b = l, l, l -- achromatic
+	else
+		function hue2rgb(p, q, t)
+			if t < 0   then t = t + 1 end
+			if t > 1   then t = t - 1 end
+			if t < 1/6 then return p + (q - p) * 6 * t end
+			if t < 1/2 then return q end
+			if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
+			return p
+		end
+		local q
+		if l < 0.5 then q = l * (1 + s) else q = l + s - l * s end
+		local p = 2 * l - q
+		r = hue2rgb(p, q, h + 1/3)
+		g = hue2rgb(p, q, h)
+		b = hue2rgb(p, q, h - 1/3)
+	end
 	-- Modified to produce Decimal RGB values
-  return r , g , b , a 
+	return r , g , b , a 
 end
-
-function GeminiColor:GetColorList()
-	return ktColors
-end
-
 -----------------------------------------------------------------------------------------------
 -- GeminiColorForm Functions
 -----------------------------------------------------------------------------------------------
 -- when the OK button is clicked
-function GeminiColor:OnOK()
-	self.wndMain:Close() -- hide the window
+function GeminiColorEditor:OnOK()
+	local color = self.GetCurrentColor()
+	GeminiColor.wndMain:Close() -- hide the window
 end
 
 -- when the Cancel button is clicked
-function GeminiColor:OnCancel()
-	self.wndMain:Close() -- hide the window
+function GeminiColorEditor:OnCancel()
+	GeminiColor.wndMain:Close() -- hide the window
 end
 
-function GeminiColor:OnColorDD(wndHandler, wndControl)
-	self.wndDD:Show(not wndDD:IsShown())
+function GeminiColorEditor:CreateColorDD()
+	for i, v in pairs(ktColors) do
+		local wndCurrColor = Apollo.LoadForm(GeminiColorEditor.xmlDoc,"ColorListItemForm",GeminiColor.wndDD,self)
+		wndCurrColor:SetText(v.colorName)
+		wndCurrColor:SetTextColor("FF"..v.strColor)
+	end
+	GeminiColor.wndDD:ArrangeChildrenVert()
 end
 
-function GeminiColor:SetRGB(R,G,B)
-
-	if R ~= nil then self.RGB.R = R end
-	if G ~= nil then self.RGB.G = G end
-	if B ~= nil then self.RGB.B = B end
-	self.wndMain:FindChild("input_Red"):SetText(self.RGB.R)
-	self.wndMain:FindChild("input_Green"):SetText(self.RGB.G)
-	self.wndMain:FindChild("input_Blue"):SetText(self.RGB.B)
-	
+function GeminiColorEditor:OnColorClick(wndHandler, wndControl)
+	local strColorCode = wndControl:GetTextColor()
+	self:SetRGB(GeminiColor:HexToRGBAPerc(strColorCode))
+	self:SetCurrentSwatchColor()
 end
 
-function GeminiColor:OnDDItemClick(wndHandler, wndControl)
-	local strColor = wndControl:GetTextColor()
-	local fR,fG,fB = self:HexToRGBAPerc(strColor)
-	local 
-	self:SetRGB(fR, fG, fB)
-	
+function GeminiColorEditor:OnColorDD(wndHandler, wndControl)
+	GeminiColor.wndDD:Show(not GeminiColor.wndDD:IsShown())
 end
 
-function GeminiColor:SetCurrentSwatchColor()
-	local clrNew = ApolloColor.new(self.hslToRgb(self.HSL.H, self.HSL.S, self.HSL.L))
-	local clrOld = ApolloColor.new(self.wndMain:FindChild("wnd_ColorSwatch_Current"):GetBGColor())
-	self.wndMain:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrNew)
-	self.wndMain:FindChild("wnd_ColorSwatch_Previous"):SetBGColor(clrOld)
+function GeminiColorEditor:SetRGB(R,G,B)
+	if R ~= nil then self.tRGB.R = R end
+	if G ~= nil then self.tRGB.G = G end
+	if B ~= nil then self.tRGB.B = B end
+	GeminiColor.wndMain:FindChild("input_Red"):SetText(self.tRGB.R)
+	GeminiColor.wndMain:FindChild("input_Green"):SetText(self.tRGB.G)
+	GeminiColor.wndMain:FindChild("input_Blue"):SetText(self.tRGB.B)	
+end
+
+function GeminiColorEditor:SetCurrentSwatchColor()
+	local clrNew = ApolloColor.new(self.tRGB.R, self.tRGB.G, self.tRGB.B)
+	local clrOld = ApolloColor.new(GeminiColor.wndMain:FindChild("wnd_ColorSwatch_Current"):GetBGColor())
+	GeminiColor.wndMain:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrNew)
+	GeminiColor.wndMain:FindChild("wnd_ColorSwatch_Previous"):SetBGColor(clrOld)
 	local tRGB = clrNew:ToTable()
 	
-	GeminiColor:SetRGB((tRGB.red or tRGB.r, or tRGB[1]),(self.RGB.G = tRGB.green or tRGB.g, or tRGB[2]),(self.RGB.B = tRGB.blue or tRGB.b, or tRGB[3]))
+	self:SetRGB((tRGB.red or tRGB.r, or tRGB[1]),(self.tRGB.G = tRGB.green or tRGB.g, or tRGB[2]),(self.tRGB.B = tRGB.blue or tRGB.b, or tRGB[3]))
 end
 
-function GeminiColor:OnSatValueMouseDown( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY)
-	self.HSL.S = nLastRelativeMouseX
-	self.HSL.L = nLastRelativeMouseY
-	local wndLocPointer = self.wndSatVal:FindChild("wnd_Loc")
+function GeminiColor:GetCurrentColor()
+	return GeminiColor.wndMain:FindChild("wnd_ColorSwatch_Current"):GetBGColor()
+end
+
+function GeminiColorEditor:OnSatValueMouseDown( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY)
+	self.tHSL.S = nLastRelativeMouseX
+	self.tHSL.L = nLastRelativeMouseY
+	local wndLocPointer = GeminiColor.wndSatVal:FindChild("wnd_Loc")
 	wndLocPointer:SetAnchorOffsets(nLastRelativeMouseX - 10, nLastRelativeMouseX, -10, nLastRelativeMouseX +10, nLastRelativeMouseX +10)
 	self:SetCurrentSwatchColor()
 end
 
-function GeminiColor:SetSatValColor(clrHue)
-	local clrNew = self.hslToRgb(clrHue, 1, 1)
-	self.wndSatVal:SetBGColor(ApolloColor.new(clrNew))
-end
-
-function GeminiColor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOldValue )
-	self.HSL.H = math.floor(fNewValue / 100)
-	self:SetSatValColor(self.HSL.H)
+function GeminiColorEditor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOldValue )
+	self.tHSL.H = math.floor(fNewValue / 100)
+	local clrNew = GeminiColor.HSLtoRGB(self.tHSL.H, 1, 1)
+	GeminiColor.wndSatVal:SetBGColor(ApolloColor.new(clrNew))
 	self:SetCurrentSwatchColor()
 end
 
