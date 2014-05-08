@@ -3,8 +3,6 @@ GeminiColor
 
  A tool designed for adding color picking capabilities. Has options for preset or custom colors.
  
- 
-# Useage: #
 
 ## To Call: ##
     GeminiColor = Apollo.GetAddon("GeminiColor")
@@ -15,7 +13,7 @@ GeminiColor
 -  strCallback - The string refeence to the callback handler. Receives one argument, strColor, a hexadecimal string of the color.
 -  bCustomColor - Optional If true, will offer a color picker window instead of just the preset colors. if false, only dropdown with all X11 colors is available.
 
-    GeminiColor:GetColorList()
+## GeminiColor:GetColorList() ##
 - returns - Table of all X11 colors, each entry is as follows:
 - { colorName = "IndianRed", strColor = "CD5C5C"},
 
@@ -27,10 +25,10 @@ GeminiColor
 
 ## GeminiColor:HSLtoRGB(h, s, l, a) ##
 
--  h - Hue 0 1
--  s - Saturation 0 1
--  l - Lightness 0 1
--  a - Alpha 0 1
+-  h - Hue 0 - 1
+-  s - Saturation 0 - 1
+-  l - Lightness 0 - 1
+-  a - Alpha 0 - 1
 
 -  returns - List of RGBA percentage values
  
