@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------------------------
  
 local MAJOR, MINOR = "GeminiColor", 1
-local APkg = Apollo.GetPackage(MAJOR).tPackage
+local APkg = Apollo.GetAddon(MAJOR)
 
 if APkg then
 	return -- no upgrade is needed
@@ -19,6 +19,7 @@ require "Window"
 -----------------------------------------------------------------------------------------------
 -- Constants
 -----------------------------------------------------------------------------------------------
+-- e.g. local kiExampleVariableMax = 999
 
 local ktColors = {
 	{ colorName = "IndianRed", strColor = "CD5C5C"}, { colorName = "LightCoral", strColor = "F08080"}, { colorName = "Salmon", strColor = "FA8072"},
@@ -70,19 +71,33 @@ local ktColors = {
 }
  
 -----------------------------------------------------------------------------------------------
--- GeminiColor OnLoad
+-- Initialization
 -----------------------------------------------------------------------------------------------
+function GeminiColor:new(o)
+    o = o or {}
+    setmetatable(o, self)
+    self.__index = self 
 
-function GeminiColor:OnLoad()
-	local folder = Apollo.GetAssetFolder()
-	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor\\GeminiColor.xml")
-	self.xmlDoc:RegisterCallback("OnDocLoaded", self)
+    -- initialize variables here	
+    return o
 end
 
-function GeminiColor:OnDocLoaded()
+function GeminiColor:Init()
+	local bHasConfigureFunction = false
+	local strConfigureButtonText = ""
+	local tDependencies = {}
+    Apollo.RegisterAddon(self, bHasConfigureFunction, strConfigureButtonText, tDependencies)
+end
+ 
+-----------------------------------------------------------------------------------------------
+-- GeminiColor OnLoad
+-----------------------------------------------------------------------------------------------
+function GeminiColor:OnLoad()
+	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor.xml")
 	self.wndMain = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
 	
 	Apollo.LoadSprites("GeminiColorSprites.xml")
+	
 	self.wndColorPicker = self.wndMain:FindChild("wnd_ColorPicker")
 	self.wndSatVal = self.wndColorPicker:FindChild("wnd_WidgetContainer:wnd_SatValue")
 	self.wndSatVal:SetSprite("GeminiColorSprites:SL")
@@ -90,6 +105,7 @@ function GeminiColor:OnDocLoaded()
 	self.wndHue = self.wndColorPicker:FindChild("wnd_WidgetContainer:wnd_Hue:SliderBar")
 	self.wndColorPicker:FindChild("wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:H")
 	self.wndColorPicker:Show(false)
+	
 	self.wndDD = self.wndMain:FindChild("ddList_PresetColors:wnd_ColorDD")
 	for i, v in pairs(ktColors) do
 		local wndCurrColor = Apollo.LoadForm(self.xmlDoc,"ColorListItemForm",self.wndDD,self)
@@ -100,6 +116,8 @@ function GeminiColor:OnDocLoaded()
 	self.wndDD:Show(false)	
 	
 	self.wndMain:Show(false, true)
+	
+	--Apollo.RegisterSlashCommand("gc", "OnGCOn", self)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -113,7 +131,7 @@ end
 
 function GeminiColor:ShowColorPicker(tAddon, strCallBack, bCustomColor, strInitialColor)
 	if self.wndMain:IsShown() == true then
-		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_Debug, "<T TextColor=\"red\">GeminiColor</T><T TextColor=\"xkcdOrange\"> currently in</T><T TextColor=\"xkcdYellow\"> use, please</T><T TextColor=\"green\"> try again</T><T TextColor=\"blue\"> after closing</T><T TextColor=\"xkcdIndigo\"> the previous</T><T TextColor=\"xkcdViolet\"> color picker.</T>", "")
+		Print("GeminiColor currently in use, please try again after closing the previous color picker.")
 		return
 	end
 	self.tAddon = tAddon
@@ -129,7 +147,6 @@ function GeminiColor:ShowColorPicker(tAddon, strCallBack, bCustomColor, strIniti
 	end
 	
 	self.wndMain:Show(true)
-	self.wndMain:ToFront()
 end
 
 function GeminiColor:GetColorList()
@@ -139,7 +156,6 @@ function GeminiColor:GetColorList()
 end
 
 function GeminiColor:RGBAPercToHex(r, g, b, a)
-	-- Returns a hexadecimal string for the RGBA values passed.
 	if not(a) then a = 1 end
 	r = r <= 1 and r >= 0 and r or 0
 	g = g <= 1 and g >= 0 and g or 0
@@ -150,7 +166,6 @@ function GeminiColor:RGBAPercToHex(r, g, b, a)
 end
 
 function GeminiColor:HexToRGBAPerc(hex)
-	-- Returns RGBA values for the a hexadecimal string passed.
 	if string.len(hex) == 6 then
 		local rhex, ghex, bhex = string.sub(hex, 1,2), string.sub(hex, 3, 4), string.sub(hex, 5, 6)
 		-- return R,G,B number list
@@ -163,12 +178,10 @@ function GeminiColor:HexToRGBAPerc(hex)
 end
 
 function GeminiColor:RGBpercToRGB(r,g,b,a)
-	--Converts 0 - 1 RGB to 0 - 255 RGB
 	return r * 255, g * 255, b * 255, a * 255
 end
 
 function GeminiColor:RGBtoRGBperc(r,g,b,a)
-	--Converts 0 - 255 RGB to 0 - 1 RGB
 	return r / 255, g / 255, b / 255, a / 255
 end
 -----------------------------------------------------------------------------------------------
@@ -350,8 +363,10 @@ function GeminiColor:UpdateHSL()
 	
 	-- Update Colors
 	local clrNew = self:RGBAPercToHex(self:HSLtoRGB(fHue, fSaturation, fLightness))
+	--local clrOld = self.wndMain:FindChild("wnd_ColorSwatch_Current"):GetBGColor()
 	
 	self.wndMain:FindChild("wnd_ColorSwatch_Current"):SetBGColor("FF"..clrNew)
+	--self.wndMain:FindChild("wnd_ColorSwatch_Previous"):SetBGColor(clrOld)
 	self:SetRGB(self:HSLtoRGB(fHue, fSaturation, fLightness))
 	
 end
@@ -372,4 +387,8 @@ function GeminiColor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOld
 	self.wndSatVal:FindChild("wnd_Overlay"):SetBGColor("ff"..clrNew)
 end
 
-Apollo.RegisterPackage(GeminiColor, MAJOR, MINOR, {})
+-----------------------------------------------------------------------------------------------
+-- GeminiColor Instance
+-----------------------------------------------------------------------------------------------
+local GeminiColorInst = GeminiColor:new()
+GeminiColorInst:Init()
