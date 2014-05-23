@@ -4,12 +4,13 @@
 -----------------------------------------------------------------------------------------------
  
 local MAJOR, MINOR = "GeminiColor", 1
-local APkg = Apollo.GetPackage(MAJOR).tPackage
-
-if APkg then
-	return -- no upgrade is needed
+-- Get a reference to the package information if any
+local APkg = Apollo.GetPackage(MAJOR)
+-- If there was an older version loaded we need to see if this is newer
+if APkg and (APkg.nVersion or 0) >= MINOR then
+	return -- no upgrade needed
 end
-  
+
 require "Window"
  
 -----------------------------------------------------------------------------------------------
@@ -111,13 +112,14 @@ function GeminiColor:OnGCOn()
 	self:ShowColorPicker({Test = function(self, strColor) Print(strColor) end}, "Test", true)
 end
 
-function GeminiColor:ShowColorPicker(tAddon, strCallBack, bCustomColor, strInitialColor)
+function GeminiColor:ShowColorPicker(tAddon, strCallBack, bCustomColor, strInitialColor, callbackToken)
 	if self.wndMain:IsShown() == true then
 		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_Debug, "<T TextColor=\"red\">GeminiColor</T><T TextColor=\"xkcdOrange\"> currently in</T><T TextColor=\"xkcdYellow\"> use, please</T><T TextColor=\"green\"> try again</T><T TextColor=\"blue\"> after closing</T><T TextColor=\"xkcdIndigo\"> the previous</T><T TextColor=\"xkcdViolet\"> color picker.</T>", "")
 		return
 	end
 	self.tAddon = tAddon
 	self.strCallBack = strCallBack
+	self.callbackToken = callbackToken
 	
 	self.wndMain:FindChild("btn_CustomColor"):Show(bCustomColor or false)
 
@@ -265,7 +267,8 @@ function GeminiColor:OnOK()
 	local addon = self.tAddon
 	local callBack = self.strCallBack
 	local strColor = self:GetCurrentColor()
-	addon[callBack](addon,strColor)
+	local callbackToken = self.callbackToken
+	addon[callBack](addon,strColor,callbackToken)
 	self.wndMain:Show(false) -- hide the window
 	self.tAddon = nil
 	self.strCallBack = nil
