@@ -122,7 +122,7 @@ function GeminiColor:CreateColorPicker(owner, callback, bCustomColor, strInitial
 	end	
 	
 	wndChooser:SetData({
-		tOwner = tOwner,
+		owner = owner,
 		callback = callback,
 		bCustomColor = bCustomColor,
 		strInitialColor = strInitialColor,
@@ -138,19 +138,20 @@ function GeminiColor:OnGCOn()
 	self:ShowColorPicker({Test = function(self, strColor) Print(strColor) end}, "Test", true)
 end
 
-function GeminiColor:ShowColorPicker(owner, callBack, bCustomColor, strInitialColor, ...)
+function GeminiColor:ShowColorPicker(owner, callback, bCustomColor, strInitialColor, ...)
 
 	local chooser = self:CreateColorPicker(owner, callback, bCustomColor, strInitialColor, unpack(arg))
-	chooser:AddEvent(
-		"WindowClosed", 
-		function(wndHandler, wndControl) 
-			Print("Closed...")
-			wndControl:Destroy()
-		end
-	)
+	chooser:AddEventHandler("WindowHide", "OnColorChooserHide", self)
 
 	chooser:Show(true)
 	chooser:ToFront()
+end
+
+function GeminiColor:OnColorChooserHide(wndHandler, wndControl) 
+	if wndHandler ~= wndControl then
+		return
+	end
+	wndControl:Destroy()
 end
 
 function GeminiColor:GetColorList()
@@ -287,18 +288,18 @@ function GeminiColor:OnOK(wndHandler, wndControl, eMouseButton)
 			
 	local data = chooser:GetData()
 		
-	local owner = data.tOwner
+	local owner = data.owner
 	local callback
 	
 	if type(data.callback) == "function" then
 		callback = data.callback
 	else
-		callback = tOwner[data.callback] 
+		callback = owner[data.callback] 
 	end			
 		
 	local strColor = self:GetCurrentColor(chooser)
 	
-	if data.args ~= nil
+	if data.args ~= nil then
 		callback(owner, strColor, unpack(data.args))
 	else
 		callback(owner, strColor)	
@@ -315,7 +316,7 @@ function GeminiColor:OnPickerShow(wndHandler, wndControl)
 	local chooser = wndControl:GetParent()
 	local data = chooser:GetData()
 	
-	local wndPicker = data.wndPicker
+	local wndPicker = chooser:FindChild("wnd_ColorPicker")
 
 	wndPicker:Show(wndControl:IsChecked())
 	if data.bCustomColorCommit == true then
@@ -370,7 +371,9 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	local clrOld = chooser:FindChild("wnd_ColorSwatch_Previous"):GetBGColor():ToTable()
 	local strColor = self:RGBAPercToHex(clrOld.r, clrOld.g, clrOld.b)
 	chooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("FF"..strColor)
-	self:SetRGB(self:HexToRGBAPerc(strColor), chooser )
+	
+	local r, g, b = self:HexToRGBAPerc(strColor)
+	self:SetRGB(r, g, b, chooser )
 end
 
 function GeminiColor:GetCurrentColor(chooser) 
@@ -380,8 +383,7 @@ function GeminiColor:GetCurrentColor(chooser)
 end
 
 function GeminiColor:UpdateHSL(chooser)
-
-	local wndSatVal = chooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
+	local wndSatVal = chooser:FindChild("wnd_SatValue")
 
 	--Saturation and Lightness
 	local fLightness, fSaturation = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
@@ -393,18 +395,22 @@ function GeminiColor:UpdateHSL(chooser)
 	
 	if fLightness > 1 then fLightness = 1 elseif fLightness < 0 then fLightness = 0 end
 	if fSaturation > 1 then fSaturation = 1 elseif fSaturation < 0 then fSaturation = 0 end
-	
+
 	-- Hue
-	local fHue = math.floor(wndSatVal:GetParent():FindChild("wnd_Hue"):GetValue()) / 100
+	local fHue = math.floor(chooser:FindChild("SliderBar"):GetValue()) / 100	
 	
 	local clrOverlay = self:RGBAPercToHex(self:HSLtoRGB(fHue, 0.5, 0.5))
 	wndSatVal:FindChild("wnd_Overlay"):SetBGColor("FF"..clrOverlay)
+	
 	
 	-- Update Colors
 	local clrNew = self:RGBAPercToHex(self:HSLtoRGB(fHue, fSaturation, fLightness))
 	
 	chooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("FF"..clrNew)
-	self:SetRGB(self:HSLtoRGB(fHue, fSaturation, fLightness), chooser)
+	
+	local r,g,b = self:HSLtoRGB(fHue, fSaturation, fLightness)
+		
+	self:SetRGB(r, g, b, chooser)
 	
 end
 
@@ -423,12 +429,14 @@ end
 function GeminiColor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOldValue)
 	local wndHue = wndControl:GetParent()
 	local wndWidgetContainer = wndHue:GetParent()
+
 	local chooser = wndWidgetContainer:GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Hue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
 
 	self:UpdateHSL(chooser)
-	local fHue = wndHue:GetValue() / 100
+	local fHue = chooser:FindChild("SliderBar"):GetValue() / 100
 	local clrNew = self:RGBAPercToHex(self:HSLtoRGB(fHue, 0.5, 0.5))
-	wndWidgetContainer:FindChild("wnd_SatValue"):FindChild("wnd_Overlay"):SetBGColor("ff"..clrNew)
+
+	wndWidgetContainer:FindChild("wnd_Overlay"):SetBGColor(clrNew)
 end
 
 Apollo.RegisterPackage(GeminiColor, MAJOR, MINOR, {})

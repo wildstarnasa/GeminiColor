@@ -14,6 +14,7 @@ GeminiColor
 -  bCustomColor - Optional If true, will offer a color picker window instead of just the preset colors. if false, only dropdown with all X11 colors is available.
 -  strInitialColor - Optional initial color for the picker
 -  ... - optional additional arguments to pass back to the callback handler
+
 Shows a single use color picker
 
 ## GeminiColor:CreateColorPicker(owner, callback [, bCustomColor] [, strInitialColor] [,...]) ##
@@ -22,6 +23,7 @@ Shows a single use color picker
 -  bCustomColor - Optional If true, will offer a color picker window instead of just the preset colors. if false, only dropdown with all X11 colors is available.
 -  strInitialColor - Optional initial color for the picker
 -  ... - optional additional arguments to pass back to the callback handler
+
 This method returns a _reusable_ color picker. It does *not* show the picker, it only returns a window that represents the picker. 
 It is up to the caller to call _Show_ and possibly other methods (like _Destroy_) on the window as desired.
 
