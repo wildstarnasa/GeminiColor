@@ -103,8 +103,8 @@ local ktColors = {
 -----------------------------------------------------------------------------------------------
 
 function GeminiColor:OnLoad()
-	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor\\GeminiColor.xml")	
-	Apollo.LoadSprites("GeminiColor\\GeminiColorSprites.xml")
+	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor\\GeminiColor.xml")
+	Apollo.LoadSprites("GeminiColor\\GeminiColorSprites.xml", "GeminiColorSprites")
 end
 
 -----------------------------------------------------------------------------------------------
@@ -112,35 +112,33 @@ end
 -----------------------------------------------------------------------------------------------
 -- Define general functions here
 
-function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, ...)
-	local wndChooser = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
-	local wndPicker = wndChooser:FindChild("wnd_ColorPicker")
-	local wndSatVal = wndPicker:FindChild("wnd_WidgetContainer:wnd_SatValue")
-	wndSatVal:SetSprite("GeminiColorSprites:SL")
-	wndSatVal:FindChild("wnd_Overlay"):SetSprite("GeminiColorSprites:SLOverlay")
-	
-	local wndHue = wndPicker:FindChild("wnd_WidgetContainer:wnd_Hue:SliderBar")
-	wndPicker:FindChild("wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:H")
-	wndPicker:Show(false)
-	
+--[[
+
 	local wndDD = wndChooser:FindChild("ddList_PresetColors:wnd_ColorDD")
 	for i, v in pairs(ktColors) do
 		local wndCurrColor = Apollo.LoadForm(self.xmlDoc,"ColorListItemForm",wndDD,self)
 		wndCurrColor:SetText(v.colorName)
-		wndCurrColor:SetTextColor(ApolloColor.new("ff"..v.strColor))
+		wndCurrColor:SetTextColor("ff"..v.strColor)
+		wndCurrColor:FindChild("swatch"):SetBGColor("ff"..v.strColor)
 	end
 	wndDD:ArrangeChildrenVert()
 	wndDD:Show(false)
-		
-	wndChooser:FindChild("btn_CustomColor"):Show(bCustomColor or false)
+]]
 
-	if type(strInitialColor) == "string" then
-		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor(strInitialColor)
-	else
-		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ffffffff")
-		wndChooser:FindChild("wnd_ColorSwatch_Previous"):SetBGColor("ff000000")
+function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, ...)
+	local wndChooser = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
+	wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:Hue")
+
+	local wndSwatches = wndChooser:FindChild("wnd_SwatchContainer")
+	for i, v in pairs(ktColors) do
+		local wndCurrColor = Apollo.LoadForm(self.xmlDoc, "SwatchButtonForm", wndSwatches, self)
+		local xmlDocTT = XmlDoc.new()
+		xmlDocTT:AddLine(v.colorName, "ff"..v.strColor, "CRB_InterfaceMediumBBO")
+		wndCurrColor:SetTooltipDoc(xmlDocTT)
+		wndCurrColor:SetBGColor("ff"..v.strColor)
 	end
-	
+	wndSwatches:ArrangeChildrenTiles()
+		
 	local arg = {...}
 	
 	wndChooser:SetData({
@@ -149,8 +147,15 @@ function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, str
 		bCustomColor = bCustomColor,
 		strInitialColor = strInitialColor,
 		args = arg,
-		tColorList = {},
+		tColorList = {strInitialColor},
 	})
+	
+	if type(strInitialColor) == "string" then
+		self:UpdateCurrPrevColors(wndChooser)
+	else
+		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ffffffff")
+		wndChooser:FindChild("wnd_ColorSwatch_Previous"):SetBGColor("ff000000")
+	end
 	
 	return wndChooser		
 end
@@ -177,6 +182,15 @@ function GeminiColor:GetColorList()
 	-- returns a table containing sub entries for all X11 colors.
 	-- colorName, strColor
 	return ktColors
+end
+
+function GeminiColor:GetColorStringByName(strColorName)
+	-- returns the hexadecimal string for an x11 color based on name.
+	for i, color in pairs(ktColors) do
+		if color.colorName == strColorName then
+			return color.strColor
+		end
+	end
 end
 
 function GeminiColor:RGBAPercToHex(r, g, b, a)
@@ -216,88 +230,71 @@ end
 -- Color Utility Functions
 -- Adapted From https://github.com/EmmanuelOga/columns/blob/master/utils/color.lua
 -----------------------------------------------------------------------------------------------
-
-function GeminiColor:RGBtoHSL(r, g, b, a)
+function GeminiColor:RGBtoHSV(r, g, b)
 	--[[
-	 * Converts an RGB color value to HSL. Conversion formula
-	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+	 * Converts an RGB color value to HSV. Conversion formula
+	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
 	 * Assumes r, g, and b are contained in the set [0, 255] and
-	 * returns h, s, and l in the set [0, 1].
+	 * returns h, s, and v in the set [0, 1].
 	 *
 	 * @param   Number  r       The red color value
 	 * @param   Number  g       The green color value
 	 * @param   Number  b       The blue color value
-	 * @return  Array           The HSL representation
+	 * @return  Array           The HSV representation
 	]]
-
-	r, g, b = r / 255, g / 255, b / 255
-
+	r, g, b, a = r / 255, g / 255, b / 255, a / 255
 	local max, min = math.max(r, g, b), math.min(r, g, b)
-	local h, s, l
+	local h, s, v
+	v = max
 
-	l = (max + min) / 2
+	local d = max - min
+	if max == 0 then s = 0 else s = d / max end
 
 	if max == min then
-		h, s = 0, 0 -- achromatic
+		h = 0 -- achromatic
 	else
-		local d = max - min
-		local s
-		if l > 0.5 then s = d / (2 - max - min) else s = d / (max + min) end
-			if max == r then
+		if max == r then
 			h = (g - b) / d
-				if g < b then h = h + 6 end
+			if g < b then h = h + 6 end
 			elseif max == g then h = (b - r) / d + 2
 			elseif max == b then h = (r - g) / d + 4
 		end
 		h = h / 6
 	end
 
-	return h, s, l, a or 255
+	return h, s, v, a
 end
 
-function GeminiColor:HSLtoRGB(h, s, l, a)
+function GeminiColor:HSVtoRGB(h, s, v)
 	--[[
-	 * Converts an HSL color value to RGB. Conversion formula
-	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-	 * Assumes h, s, and l are contained in the set [0, 1] and
+	 * Converts an HSV color value to RGB. Conversion formula
+	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+	 * Assumes h, s, and v are contained in the set [0, 1] and
 	 * returns r, g, and b in the set [0, 255].
 	 *
 	 * @param   Number  h       The hue
 	 * @param   Number  s       The saturation
-	 * @param   Number  l       The lightness
+	 * @param   Number  v       The value
 	 * @return  Array           The RGB representation
 	]]
 	local r, g, b
 
-	if s == 0 then
-		r, g, b = l, l, l -- achromatic
-	else
-		function hue2rgb(p, q, t)
-			if t < 0   then t = t + 1 end
-			if t > 1   then t = t - 1 end
-			if t < 1/6 then return p + (q - p) * 6 * t end
-			if t < 1/2 then return q end
-			if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
-			return p
-		end
-		local q
-		if l < 0.5 then q = l * (1 + s) else q = l + s - l * s end
-		local p = 2 * l - q
-		r = hue2rgb(p, q, h + 1/3)
-		g = hue2rgb(p, q, h)
-		b = hue2rgb(p, q, h - 1/3)
-	end
-	-- Modified to produce Decimal RGB values
-	return r , g , b , a 
-end
+	local i = math.floor(h * 6);
+	local f = h * 6 - i;
+	local p = v * (1 - s);
+	local q = v * (1 - f * s);
+	local t = v * (1 - (1 - f) * s);
 
-function GeminiColor:GetColorStringByName(strColorName)
-	-- returns the hexadecimal string for an x11 color based on name.
-	for i, color in pairs(ktColors) do
-		if color.colorName == strColorName then
-			return color.strColor
-		end
+	i = i % 6
+
+	if i == 0 then r, g, b = v, t, p
+	elseif i == 1 then r, g, b = q, v, p
+	elseif i == 2 then r, g, b = p, v, t
+	elseif i == 3 then r, g, b = p, q, v
+	elseif i == 4 then r, g, b = t, p, v
+	elseif i == 5 then r, g, b = v, p, q
 	end
+	return r , g , b
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -334,26 +331,12 @@ end
 
 function GeminiColor:OnPickerShow(wndHandler, wndControl)
 	local wndChooser = wndControl:GetParent()
-	local data = wndChooser:GetData()
-	
-	local wndPicker = wndChooser:FindChild("wnd_ColorPicker")
-
-	wndPicker:Show(wndControl:IsChecked())
-	if data.bCustomColorCommit == true then
-		local clrOld = wndChooser:FindChild("wnd_ColorSwatch_Current"):GetBGColor():ToTable()
-		local strColorCode = self:RGBAPercToHex(clrOld.r, clrOld.g, clrOld.b)
-		strColorCode = "FF"..strColorCode
-		self:SetNewColor(wndChooser, strColorCode)
-		data.bCustomColorCommit = false
-		wndChooser:SetData(data)		-- TODO: necessary ???
-	end
+	local clrOld = wndChooser:FindChild("wnd_ColorSwatch_Current"):GetBGColor():ToTable()
+	local strColorCode = self:RGBAPercToHex(clrOld.r, clrOld.g, clrOld.b, 1)
+	self:SetNewColor(wndChooser, strColorCode)
 end
 
 function GeminiColor:SetPrevCustomColor(wndHandler, wndControl)
-	local wndChooser = wndControl:GetParent()
-	local data = wndChooser:GetData()
-	data.bCustomColorCommit = true
-	wndChooser:SetData(data)			-- TODO: necessary ???
 	self:OnPickerShow(wndHandler, wndControl)
 end
 
@@ -365,8 +348,15 @@ function GeminiColor:OnColorClick(wndHandler, wndControl) -- choose from DD list
 	local wndChooser = wndControl:GetParent():GetParent():GetParent()		-- parent path: button -> wnd_ColorDD -> ddList_PresetColors -> GeminiChooserForm
 	wndChooser:FindChild("ddList_PresetColors"):SetText(strColorName)
 	wndChooser:FindChild("ddList_PresetColors"):SetTextColor(strColorCode)
-	wndChooser:SetNewColor(wndChooser, strColorCode)
+	self:SetNewColor(wndChooser, strColorCode)
 	wndControl:GetParent():Show(false)
+end
+
+function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
+	local crColor = wndControl:GetBGColor():ToTable()
+	local strColorCode = self:RGBAPercToHex(crColor.r, crColor.g, crColor.b, 1)	
+	local wndChooser = wndControl:GetParent():GetParent()	-- parent path: button -> wnd_SwatchContainer -> GeminiChooserForm
+	self:SetNewColor(wndChooser, strColorCode)
 end
 
 function GeminiColor:OnColorDD(wndHandler, wndControl) -- Show DD List
@@ -382,7 +372,12 @@ end
 
 function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	local wndChooser = wndControl:GetParent()
-	self:ClearOldColor(wndChooser)
+	local data = wndChooser:GetData()
+	table.remove(data.tColorList, 1)
+	wndChooser:SetData(data)
+	local color = {self:HexToRGBAPerc(data.tColorList[1])}
+	self:SetRGB(color[1], color[2], color[3], wndChooser )
+	self:UpdateCurrPrevColors(wndChooser)
 end
 
 function GeminiColor:GetCurrentColor(wndChooser)
@@ -390,89 +385,69 @@ function GeminiColor:GetCurrentColor(wndChooser)
 	return data.tColorList[1]
 end
 
-function GeminiColor:UpdateHSL(wndChooser)
-	local wndSatVal = wndChooser:FindChild("wnd_SatValue")
-
+function GeminiColor:UpdateHSV(wndChooser)
+	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
+	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
+	
 	--Saturation and Lightness
-	local fLightness, fSaturation = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
-	
-	local nLConstant = wndSatVal:GetWidth()
-	local nSConstant = wndSatVal:GetHeight()
-	fLightness = 1 - ((fLightness + 10) / nLConstant)
-	fSaturation = 1- ((fSaturation + 10) / nSConstant)
-	
+	local fSaturation, fLightness  = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
+	fLightness = 1 - ((fLightness + 10) / 256)
+	fSaturation = ((fSaturation + 10) / 256)
 	if fLightness > 1 then fLightness = 1 elseif fLightness < 0 then fLightness = 0 end
 	if fSaturation > 1 then fSaturation = 1 elseif fSaturation < 0 then fSaturation = 0 end
-
 	-- Hue
-	local fHue = math.floor(wndChooser:FindChild("SliderBar"):GetValue()) / 100	
-	
-	local clrOverlay = self:RGBAPercToHex(self:HSLtoRGB(fHue, 0.5, 0.5))
-	wndSatVal:FindChild("wnd_Overlay"):SetBGColor("FF"..clrOverlay)
-	
+	local fHue = math.floor(wndHue:FindChild("SliderBar"):GetValue()) / 100
+	local clrHSL = {self:HSVtoRGB(fHue, 1,1)}
+	local clrOverlay = self:RGBAPercToHex(clrHSL[1], clrHSL[2], clrHSL[3], 1)
+	wndSatVal:SetBGColor(clrOverlay)
 	
 	-- Update Colors
-	local clrNew = self:RGBAPercToHex(self:HSLtoRGB(fHue, fSaturation, fLightness))
-
-	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("FF"..clrNew)
-	
-	local r,g,b = self:HSLtoRGB(fHue, fSaturation, fLightness)
-
-	self:SetRGB(r, g, b, wndChooser)
+	local clrNew = {self:HSVtoRGB(fHue, fSaturation, fLightness)}
+	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ff"..self:RGBAPercToHex(clrNew[1], clrNew[2], clrNew[3], 1))
+	self:SetRGB(clrNew[1], clrNew[2], clrNew[3], wndChooser)
 	
 end
 
 function GeminiColor:SatLightClick( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY, bDoubleClick, bStopPropagation )
 	wndControl:FindChild("wnd_Loc"):SetAnchorOffsets(nLastRelativeMouseX - 10, nLastRelativeMouseY - 10, nLastRelativeMouseX + 10, nLastRelativeMouseY + 10)
-	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
-	self:UpdateHSL(wndChooser)
+	local wndChooser = wndControl:GetParent():GetParent()	-- ancestor chain: wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
+	self:UpdateHSV(wndChooser)
 end
 
 function GeminiColor:OnSatValueMove(wndHandler, wndControl)
-	local wndChooser = wndControl:GetParent():GetParent():GetParent():GetParent()	-- ancestor chain: wnd_Loc -> wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
-	
-	self:UpdateHSL(wndChooser)
+	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: wnd_Loc -> wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
+	self:UpdateHSV(wndChooser)
 end
 
 function GeminiColor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOldValue)
-	local wndHue = wndControl:GetParent()
-	local wndWidgetContainer = wndHue:GetParent()
-
-	local wndChooser = wndWidgetContainer:GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Hue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
-
-	self:UpdateHSL(wndChooser)
-	local fHue = wndChooser:FindChild("SliderBar"):GetValue() / 100
-	local clrNew = self:RGBAPercToHex(self:HSLtoRGB(fHue, 0.5, 0.5))
-
-	wndWidgetContainer:FindChild("wnd_Overlay"):SetBGColor(clrNew)
+	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Hue -> wnd_WidgetContainer -> GeminiChooserForm
+	self:UpdateHSV(wndChooser)
 end
 
 function GeminiColor:UpdateCurrPrevColors(wndChooser)
-	local wndCurrColor = wndChooser:FindChild("wnd_ColorSwatch_Current")
-	local wndPrevColor = wndChooser:FindChild("wnd_ColorSwatch_Previous")
-	
 	local data = wndChooser:GetData()
 	local tColorList = data.tColorList
-	
-	if #tColorList < 1 then return end
-	
-	wndCurrColor:SetBGColor(tColorList[1])
-	wndPrevColor:SetBGColor(tColorList[2 or 1])
+	if #tColorList > 1 then
+		local currColor = tColorList[1]
+		local prevColor = tColorList[2]
+		local wndCurrColor = wndChooser:FindChild("wnd_ColorSwatch_Current")
+		local wndPrevColor = wndChooser:FindChild("wnd_ColorSwatch_Previous")
+		wndCurrColor:SetBGColor(currColor)
+		wndPrevColor:SetBGColor(prevColor)
+	else
+		local currColor = tColorList[1]
+		local prevColor = "ff000000"
+		local wndCurrColor = wndChooser:FindChild("wnd_ColorSwatch_Current")
+		local wndPrevColor = wndChooser:FindChild("wnd_ColorSwatch_Previous")
+		wndCurrColor:SetBGColor(currColor)
+		wndPrevColor:SetBGColor(prevColor)
+	end
 end
 
 function GeminiColor:SetNewColor(wndChooser, strColorCode)
 	local data = wndChooser:GetData()
 	table.insert(data.tColorList, 1, strColorCode)
 	wndChooser:SetData(data)
-	self:UpdateCurrPrevColors(wndChooser)
-end
-
-function GeminiColor:ClearOldColor(wndChooser)
-	local data = wndChooser:GetData()
-	table.remove(data.tColorList, 1)
-	wndChooser:SetData(data)
-	local r, g, b = self:HexToRGBAPerc(strColor)
-	self:SetRGB(r, g, b, wndChooser )
 	self:UpdateCurrPrevColors(wndChooser)
 end
 
