@@ -69,7 +69,7 @@ end
 - strColorName - string name of the X11 color.
 - returns - Hexadecimal color string
 
-## GeminiColor:HSLtoRGB(h, s, l, a) ##
+## GeminiColor:HSVtoRGB(h, s, l, a) ##
 
 -  h - Hue 0 - 1
 -  s - Saturation 0 - 1
@@ -78,7 +78,7 @@ end
 -  returns - List of RGBA percentage values
  
 
-## GeminiColor:RGBtoHSL(r, g, b, a) ##
+## GeminiColor:RGBtoHSV(r, g, b, a) ##
  
 -  r - Red 0 - 1
 -  g - Green 0 - 1
