@@ -110,20 +110,6 @@ end
 -----------------------------------------------------------------------------------------------
 -- GeminiColor Functions
 -----------------------------------------------------------------------------------------------
--- Define general functions here
-
---[[
-
-	local wndDD = wndChooser:FindChild("ddList_PresetColors:wnd_ColorDD")
-	for i, v in pairs(ktColors) do
-		local wndCurrColor = Apollo.LoadForm(self.xmlDoc,"ColorListItemForm",wndDD,self)
-		wndCurrColor:SetText(v.colorName)
-		wndCurrColor:SetTextColor("ff"..v.strColor)
-		wndCurrColor:FindChild("swatch"):SetBGColor("ff"..v.strColor)
-	end
-	wndDD:ArrangeChildrenVert()
-	wndDD:Show(false)
-]]
 
 function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, ...)
 	local wndChooser = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
@@ -226,6 +212,7 @@ function GeminiColor:RGBtoRGBperc(r,g,b,a)
 	--Converts 0 - 255 RGB to 0 - 1 RGB
 	return r / 255, g / 255, b / 255, a / 255
 end
+
 -----------------------------------------------------------------------------------------------
 -- Color Utility Functions
 -- Adapted From https://github.com/EmmanuelOga/columns/blob/master/utils/color.lua
@@ -340,28 +327,11 @@ function GeminiColor:SetPrevCustomColor(wndHandler, wndControl)
 	self:OnPickerShow(wndHandler, wndControl)
 end
 
-function GeminiColor:OnColorClick(wndHandler, wndControl) -- choose from DD list
-	local strColorName = wndControl:GetText()
-	local strColorCode = self:GetColorStringByName(strColorName)
-	strColorCode = "FF"..strColorCode
-	
-	local wndChooser = wndControl:GetParent():GetParent():GetParent()		-- parent path: button -> wnd_ColorDD -> ddList_PresetColors -> GeminiChooserForm
-	wndChooser:FindChild("ddList_PresetColors"):SetText(strColorName)
-	wndChooser:FindChild("ddList_PresetColors"):SetTextColor(strColorCode)
-	self:SetNewColor(wndChooser, strColorCode)
-	wndControl:GetParent():Show(false)
-end
-
 function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
 	local crColor = wndControl:GetBGColor():ToTable()
 	local strColorCode = self:RGBAPercToHex(crColor.r, crColor.g, crColor.b, 1)	
 	local wndChooser = wndControl:GetParent():GetParent()	-- parent path: button -> wnd_SwatchContainer -> GeminiChooserForm
 	self:SetNewColor(wndChooser, strColorCode)
-end
-
-function GeminiColor:OnColorDD(wndHandler, wndControl) -- Show DD List
-	local wndDD = wndControl:FindChild("wnd_ColorDD")
-	wndDD:Show(not wndDD:IsShown())
 end
 
 function GeminiColor:SetRGB(R,G,B, wndChooser) -- update the RGB boxes in the color picker
@@ -449,6 +419,69 @@ function GeminiColor:SetNewColor(wndChooser, strColorCode)
 	table.insert(data.tColorList, 1, strColorCode)
 	wndChooser:SetData(data)
 	self:UpdateCurrPrevColors(wndChooser)
+end
+
+---------------------------------------------------------------------------------------------------
+-- GeminiColor Dropdown Functions
+---------------------------------------------------------------------------------------------------
+function GeminiColor:CreateColorDropdown(wndHost, strSkin)
+	-- wndHost = place holder window, used to get Window Name, Anchors and Offsets, and Parent
+	-- strSkin = "Holo" or "Metal" -- not case sensitive
+	
+	if wndHost == nil then Print("You must supply a valid window for argument #1."); return end
+	
+	local fLeftAnchor, fTopAnchor, fRightAnchor, fBottomAnchor = wndHost:GetAnchorPoints()
+	local fLeftOffset, fTopOffset, fRightOffset, fBottomOffset = wndHost:GetAnchorOffsets()
+	local strName = wndHost:GetName()
+	local wndParent = wndHost:GetParent()
+	wndHost:Destroy()
+	
+	local wndDD = Apollo.LoadForm(self.xmlDoc, "ColorDDForm", wndParent, self)
+	
+	if string.lower(strSkin) == string.lower("metal") then
+		wndDD:ChangeArt("CRB_Basekit:kitBtn_Dropdown_TextBaseHybrid")
+		--CRB_Basekit:kitBtn_List_MetalContextMenu
+	end
+	
+	local wndDDMenu = wndDD:FindChild("wnd_DDList")
+	for i, v in pairs(ktColors) do
+		local wndCurrColor = Apollo.LoadForm(self.xmlDoc,"ColorListItemForm",wndDDMenu,self)
+		wndCurrColor:SetText(v.colorName)
+		wndCurrColor:SetTextColor("ff"..v.strColor)
+		wndCurrColor:FindChild("swatch"):SetBGColor("ff"..v.strColor)
+		if string.lower(strSkin) == string.lower("metal") then
+			wndDD:ChangeArt("CRB_Basekit:kitBtn_List_MetalContextMenu")
+		end
+	end
+	wndDDMenu:ArrangeChildrenVert()
+	wndDDMenu:Show(false)
+	
+	wndDD:SetAnchorPoints(fLeftAnchor, fTopAnchor, fRightAnchor, fBottomAnchor)
+	wndDD:SetAnchorOffsets(fLeftOffset, fTopOffset, fRightOffset, fBottomOffset)
+	wndDD:SetName(strName)
+		
+	return wndDD
+end
+
+function GeminiColor:OnColorDD(wndHandler, wndControl) -- Show DD List
+	local wndDD = wndControl:FindChild("wnd_ColorDD")
+	wndDD:Show(not wndDD:IsShown())
+end
+
+function GeminiColor:OnColorClick(wndHandler, wndControl) -- choose from DD list
+	local strColorName = wndControl:GetText()
+	local strColorCode = self:GetColorStringByName(strColorName)
+	strColorCode = "FF"..strColorCode
+	
+	local wndChooser = wndControl:GetParent():GetParent()		-- parent path: button -> list window -> Dropdown
+	wndChooser:FindChild("wnd_Text"):SetText(strColorName)
+	wndChooser:FindChild("wnd_Text"):SetTextColor(strColorCode)
+	
+	wndChooser:SetData({
+		strColor = strColorCode,
+		strName = strColorName,
+	})
+	wndControl:GetParent():Show(false)
 end
 
 function GeminiColor:new(o)

@@ -59,6 +59,17 @@ function MyAddon:ColorPickerCallback(strColor, ...)
 end
 ```
 
+## GeminiColor:CreateColorDropdown(wndHost, strSkin) ##
+
+- wndHost = place holder window, used to get Window Name, Anchors and Offsets, and Parent
+- strSkin = "Holo" or "Metal" -- not case sensitive
+- Returns reference to dropdown window. Call GetData method of this window to retrieve color code and name.
+```lua
+{
+	strColor = "ffffffff",
+	strName = "White",
+}
+```
 
 ## GeminiColor:GetColorList() ##
 - returns - Table of all X11 colors, each entry is as follows:
