@@ -103,8 +103,31 @@ local ktColors = {
 -----------------------------------------------------------------------------------------------
 
 function GeminiColor:OnLoad()
-	self.xmlDoc = XmlDoc.CreateFromFile("GeminiColor\\GeminiColor.xml")
-	Apollo.LoadSprites("GeminiColor\\GeminiColorSprites.xml", "GeminiColorSprites")
+	local strPrefix = Apollo.GetAssetFolder()
+	local tToc = XmlDoc.CreateFromFile("toc.xml"):ToTable()
+	for k,v in ipairs(tToc) do
+		local strPath = string.match(v.Name, "(.*)[\\/]GeminiColor")
+		if strPath ~= nil and strPath ~= "" then
+			strPrefix = strPrefix .. "\\" .. strPath .. "\\"
+			break
+		end
+	end
+	local tSpritesXML = {
+		__XmlNode = "Sprites",
+		{ -- Form
+			__XmlNode="Sprite", Name="Hue", Cycle="1",
+			{
+				__XmlNode="Frame", Texture= strPrefix .."textures\\GCHSL.tga",
+				x0="0", x1="0", x2="0", x3="0", x4="256", x5="256",
+				y0="0", y1="0", y2="0", y3="0", y4="8", y5="8",
+				HotspotX="0", HotspotY="0", Duration="1.000",
+				StartColor="white", EndColor="white",
+			},
+		},
+	}
+	local xmlSprites = XmlDoc.CreateFromTable(tSpritesXML)
+	Apollo.LoadSprites(xmlSprites)
+	self.xmlDoc = XmlDoc.CreateFromFile(strPrefix.."GeminiColor.xml")
 end
 
 -----------------------------------------------------------------------------------------------
