@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 3
+local MAJOR, MINOR = "GeminiColor", 4
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -380,8 +380,9 @@ end
 
 function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
 	local crColor = wndControl:GetBGColor():ToTable()
-	local strColorCode = self:RGBAPercToHex(crColor.r, crColor.g, crColor.b, 1)	
+	local strColorCode = self:RGBAPercToHex(crColor.r, crColor.g, crColor.b, 1)
 	local wndChooser = wndControl:GetParent():GetParent()	-- parent path: button -> wnd_SwatchContainer -> GeminiChooserForm
+	self:SetHSV(wndChooser,strColorCode)
 	self:SetNewColor(wndChooser, strColorCode)
 end
 
