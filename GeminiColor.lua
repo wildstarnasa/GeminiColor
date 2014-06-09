@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 2
+local MAJOR, MINOR = "GeminiColor", 3
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -99,6 +99,12 @@ local ktColors = {
 }
 
 -----------------------------------------------------------------------------------------------
+-- GeminiColor Upvalues
+-----------------------------------------------------------------------------------------------
+
+local floor = math.floor
+
+-----------------------------------------------------------------------------------------------
 -- GeminiColor OnLoad
 -----------------------------------------------------------------------------------------------
 
@@ -130,7 +136,7 @@ function GeminiColor:OnLoad()
 	self.xmlDoc = XmlDoc.CreateFromFile(strPrefix.."GeminiColor.xml")
 end
 
------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
 -- GeminiColor Functions
 -----------------------------------------------------------------------------------------------
 
@@ -160,6 +166,7 @@ function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, str
 	})
 	
 	if type(strInitialColor) == "string" then
+		self:SetHSV(wndChooser, strInitialColor)
 		self:UpdateCurrPrevColors(wndChooser)
 	else
 		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ffffffff")
@@ -226,6 +233,23 @@ function GeminiColor:HexToRGBAPerc(hex)
 	end
 end
 
+local function HexToRGBA(hex)
+	if string.len(hex) == 6 then
+		local rhex, ghex, bhex = string.sub(hex, 1,2), string.sub(hex, 3, 4), string.sub(hex, 5, 6)
+		-- return R,G,B number list
+		return tonumber(rhex, 16), tonumber(ghex, 16), tonumber(bhex, 16), 255
+	else
+		local ahex, rhex, ghex, bhex = string.sub(hex, 1,2), string.sub(hex, 3, 4), string.sub(hex, 5, 6), string.sub(hex, 7, 8)
+		-- return R, G, B, A number list
+		return tonumber(rhex, 16), tonumber(ghex, 16), tonumber(bhex, 16), tonumber(ahex, 16)
+	end
+end
+
+local function RGBAToHex(r, g, b, a)
+	a = a or 255
+	return string.format("%02x%02x%02x%02x", a, r, g, b)
+end
+
 function GeminiColor:RGBpercToRGB(r,g,b,a)
 	--Converts 0 - 1 RGB to 0 - 255 RGB
 	return r * 255, g * 255, b * 255, a * 255
@@ -240,7 +264,7 @@ end
 -- Color Utility Functions
 -- Adapted From https://github.com/EmmanuelOga/columns/blob/master/utils/color.lua
 -----------------------------------------------------------------------------------------------
-function GeminiColor:RGBtoHSV(r, g, b)
+function GeminiColor:RGBtoHSV(r, g, b, a)
 	--[[
 	 * Converts an RGB color value to HSV. Conversion formula
 	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
@@ -252,6 +276,7 @@ function GeminiColor:RGBtoHSV(r, g, b)
 	 * @param   Number  b       The blue color value
 	 * @return  Array           The HSV representation
 	]]
+	a = a or 255
 	r, g, b, a = r / 255, g / 255, b / 255, a / 255
 	local max, min = math.max(r, g, b), math.min(r, g, b)
 	local h, s, v
@@ -275,7 +300,7 @@ function GeminiColor:RGBtoHSV(r, g, b)
 	return h, s, v, a
 end
 
-function GeminiColor:HSVtoRGB(h, s, v)
+function GeminiColor:HSVtoRGB(h, s, v, a)
 	--[[
 	 * Converts an HSV color value to RGB. Conversion formula
 	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
@@ -289,7 +314,9 @@ function GeminiColor:HSVtoRGB(h, s, v)
 	]]
 	local r, g, b
 
-	local i = math.floor(h * 6);
+	a = a or 1
+
+	local i = floor(h * 6);
 	local f = h * 6 - i;
 	local p = v * (1 - s);
 	local q = v * (1 - f * s);
@@ -304,7 +331,8 @@ function GeminiColor:HSVtoRGB(h, s, v)
 	elseif i == 4 then r, g, b = t, p, v
 	elseif i == 5 then r, g, b = v, p, q
 	end
-	return r , g , b
+
+	return floor(r * 255), floor(g * 255), floor(b * 255), floor(a * 255)
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -357,7 +385,7 @@ function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
 	self:SetNewColor(wndChooser, strColorCode)
 end
 
-function GeminiColor:SetRGB(R,G,B, wndChooser) -- update the RGB boxes in the color picker
+function GeminiColor:SetRGB(wndChooser, R,G,B) -- update the RGB boxes in the color picker
 	wndChooser:FindChild("input_Red"):SetText(R)
 	wndChooser:FindChild("input_Green"):SetText(G)
 	wndChooser:FindChild("input_Blue"):SetText(B)
@@ -368,14 +396,29 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	local data = wndChooser:GetData()
 	table.remove(data.tColorList, 1)
 	wndChooser:SetData(data)
-	local color = {self:HexToRGBAPerc(data.tColorList[1])}
-	self:SetRGB(color[1], color[2], color[3], wndChooser )
+	self:SetRGB(wndChooser, self:HexToRGBAPerc(data.tColorList[1]))
 	self:UpdateCurrPrevColors(wndChooser)
 end
 
 function GeminiColor:GetCurrentColor(wndChooser)
 	local data = wndChooser:GetData()
 	return data.tColorList[1]
+end
+
+function GeminiColor:SetHSV(wndChooser, strHexColor)
+	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
+	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
+
+	local h, s, v, a = self:RGBtoHSV(HexToRGBA(strHexColor))
+	local left, top, right, bottom = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
+
+	left = floor((s * 256) - 10)
+	top = floor(((-v + 1) * 256) - 10)
+	wndSatVal:FindChild("wnd_Loc"):SetAnchorOffsets(left, top, left + 20, bottom + 20)
+
+	wndHue:FindChild("SliderBar"):SetValue(h * 100)
+	local clrOverlay = RGBAToHex(self:HSVtoRGB(h, 1, 1))
+	wndSatVal:SetBGColor(clrOverlay)
 end
 
 function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
@@ -389,16 +432,14 @@ function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 	if fLightness > 1 then fLightness = 1 elseif fLightness < 0 then fLightness = 0 end
 	if fSaturation > 1 then fSaturation = 1 elseif fSaturation < 0 then fSaturation = 0 end
 	-- Hue
-	local fHue = math.floor(wndHue:FindChild("SliderBar"):GetValue()) / 100
-	local clrHSL = {self:HSVtoRGB(fHue, 1,1)}
-	local clrOverlay = self:RGBAPercToHex(clrHSL[1], clrHSL[2], clrHSL[3], 1)
+	local fHue = floor(wndHue:FindChild("SliderBar"):GetValue()) / 100
+	local clrOverlay = RGBAToHex(self:HSVtoRGB(fHue, 1,1))
 	wndSatVal:SetBGColor(clrOverlay)
 	
 	-- Update Colors
-	local clrNew = {self:HSVtoRGB(fHue, fSaturation, fLightness)}
-	local clrCode = "ff" ..self:RGBAPercToHex(clrNew[1], clrNew[2], clrNew[3], 1)
+	local clrCode = RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness))
 	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrCode)
-	self:SetRGB(clrNew[1], clrNew[2], clrNew[3], wndChooser)
+	self:SetRGB(wndChooser, self:HexToRGBAPerc(clrCode))
 
 	if bUpdatePrev then
 		self:SetNewColor(wndChooser, clrCode)
@@ -414,6 +455,23 @@ function GeminiColor:SatLightClick( wndHandler, wndControl, eMouseButton, nLastR
 end
 
 function GeminiColor:OnSatValueMove(wndHandler, wndControl)
+	-- Constrain to SatValue
+	local left,top,right,bottom = wndControl:GetAnchorOffsets()
+	local rightEdge = wndControl:GetParent():GetWidth() - 10
+	local bottomEdge = wndControl:GetParent():GetHeight() - 10
+	if left < -10 then
+		left = -10
+	elseif left > rightEdge then
+		left = rightEdge
+	end
+	
+	if top < -10 then
+		top = -10
+	elseif top > bottomEdge then
+		top = bottomEdge
+	end
+
+	wndControl:SetAnchorOffsets(left,top,left + 20, top + 20)
 	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: wnd_Loc -> wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
 	self:UpdateHSV(wndChooser, true)
 end
