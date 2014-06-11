@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 4
+local MAJOR, MINOR = "GeminiColor", 5
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -415,7 +415,7 @@ function GeminiColor:SetHSV(wndChooser, strHexColor)
 
 	left = floor((s * 256) - 10)
 	top = floor(((-v + 1) * 256) - 10)
-	wndSatVal:FindChild("wnd_Loc"):SetAnchorOffsets(left, top, left + 20, bottom + 20)
+	wndSatVal:FindChild("wnd_Loc"):SetAnchorOffsets(left, top, left + 20, top + 20)
 
 	wndHue:FindChild("SliderBar"):SetValue(h * 100)
 	local clrOverlay = RGBAToHex(self:HSVtoRGB(h, 1, 1))
