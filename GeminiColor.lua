@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 5
+local MAJOR, MINOR = "GeminiColor", 6
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -396,8 +396,8 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	local wndChooser = wndControl:GetParent()
 	local data = wndChooser:GetData()
 	table.remove(data.tColorList, 1)
-	wndChooser:SetData(data)
 	self:SetRGB(wndChooser, self:HexToRGBAPerc(data.tColorList[1]))
+	self:SetHSV(wndChooser, data.tColorList[1])
 	self:UpdateCurrPrevColors(wndChooser)
 end
 
