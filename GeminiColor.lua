@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 6
+local MAJOR, MINOR = "GeminiColor", 7
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -132,7 +132,7 @@ function GeminiColor:OnLoad()
 		},
 	}
 	local xmlSprites = XmlDoc.CreateFromTable(tSpritesXML)
-	Apollo.LoadSprites(xmlSprites)
+	Apollo.LoadSprites(xmlSprites, "GeminiColorSprites")
 	self.xmlDoc = XmlDoc.CreateFromFile(strPrefix.."GeminiColor.xml")
 end
 
