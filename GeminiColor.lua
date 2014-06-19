@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 7
+local MAJOR, MINOR = "GeminiColor", 8
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -103,6 +103,7 @@ local ktColors = {
 -----------------------------------------------------------------------------------------------
 
 local floor = math.floor
+local GetCurrentColor
 
 -----------------------------------------------------------------------------------------------
 -- GeminiColor OnLoad
@@ -140,7 +141,7 @@ end
 -- GeminiColor Functions
 -----------------------------------------------------------------------------------------------
 
-function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, ...)
+function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 	local wndChooser = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
 	wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:Hue")
 
@@ -153,18 +154,39 @@ function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, str
 		wndCurrColor:SetBGColor("ff"..v.strColor)
 	end
 	wndSwatches:ArrangeChildrenTiles()
-		
-	local arg = {...}
-	
-	wndChooser:SetData({
-		owner = taOwner,
-		callback = fnstrCallback,
-		bCustomColor = bCustomColor,
-		strInitialColor = strInitialColor,
-		args = arg,
-		tColorList = {strInitialColor},
-	})
-	
+
+	local strInitialColor, tData
+	if type(oCallbackOrOpt) == "table" then
+		strInitialColor = oCallbackOrOpt.strInitialColor
+		tData = {
+			owner = taOwner,
+			callback = oCallbackOrOpt.callback,
+			bCustomColor = oCallbackOrOpt.bCustomColor,
+			strInitialColor = strInitialColor,
+			args = {...},
+			tColorList = {strInitialColor},
+		}
+	else
+		-- Previous Signature: taOwner, fnstrCallback, bCustomColor, strInitialColor, ...
+		local tArg = {}
+		local bCustomColor = select(1,...)
+		strInitialColor = select(2,...)
+		for i=3,select("#",...) do
+			table.insert(tArg, select(i,...))
+		end
+
+		tData = {
+			owner = taOwner,
+			callback = oCallbackOrOpt,
+			bCustomColor = bCustomColor,
+			strInitialColor = strInitialColor,
+			args = tArg,
+			tColorList = {strInitialColor},
+		}
+	end
+
+	wndChooser:SetData(tData)
+
 	if type(strInitialColor) == "string" then
 		self:SetHSV(wndChooser, strInitialColor)
 		self:UpdateCurrPrevColors(wndChooser)
@@ -172,7 +194,7 @@ function GeminiColor:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, str
 		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ffffffff")
 		wndChooser:FindChild("wnd_ColorSwatch_Previous"):SetBGColor("ff000000")
 	end
-	
+
 	return wndChooser
 end
 
@@ -180,16 +202,15 @@ function GeminiColor:OnGCOn()
 	self:ShowColorPicker({Test = function(self, strColor) Print(strColor) end}, "Test", true)
 end
 
-function GeminiColor:ShowColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, ...)
-	local arg = {...}
-	local wndChooser = self:CreateColorPicker(taOwner, fnstrCallback, bCustomColor, strInitialColor, unpack(arg))
+function GeminiColor:ShowColorPicker(taOwner, oCallbackOrOpt, ...)
+	local wndChooser = self:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 	wndChooser:AddEventHandler("WindowHide", "OnColorChooserHide", self)
 
 	wndChooser:Show(true)
 	wndChooser:ToFront()
 end
 
-function GeminiColor:OnColorChooserHide(wndHandler, wndControl) 
+function GeminiColor:OnColorChooserHide(wndHandler, wndControl)
 	if wndHandler ~= wndControl then return end
 	wndControl:Destroy()
 end
@@ -338,9 +359,7 @@ end
 ---------------------------------------------------------------------------------------------------
 -- GeminiChooserForm Functions
 ---------------------------------------------------------------------------------------------------
-function GeminiColor:OnOK(wndHandler, wndControl, eMouseButton)
-	local wndChooser = wndControl:GetParent()
-
+local function FireCallback(wndChooser)
 	local data = wndChooser:GetData()
 
 	local owner = data.owner
@@ -349,16 +368,20 @@ function GeminiColor:OnOK(wndHandler, wndControl, eMouseButton)
 	if type(data.callback) == "function" then
 		callback = data.callback
 	else
-		callback = owner[data.callback] 
-	end	
+		callback = owner[data.callback]
+	end
 
-	local strColor = self:GetCurrentColor(wndChooser)
+	local strColor = GetCurrentColor(wndChooser)
 
 	if data.args ~= nil then
 		callback(owner, strColor, unpack(data.args))
 	else
-		callback(owner, strColor)	
+		callback(owner, strColor)
 	end
+end
+
+function GeminiColor:OnOK(wndHandler, wndControl, eMouseButton)
+	local wndChooser = wndControl:GetParent()
 
 	wndChooser:Show(false) -- hide the window
 end
@@ -401,7 +424,7 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	self:UpdateCurrPrevColors(wndChooser)
 end
 
-function GeminiColor:GetCurrentColor(wndChooser)
+function GetCurrentColor(wndChooser)
 	local data = wndChooser:GetData()
 	return data.tColorList[1]
 end
@@ -425,7 +448,7 @@ end
 function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
 	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
-	
+
 	--Saturation and Lightness
 	local fSaturation, fLightness  = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
 	fLightness = 1 - ((fLightness + 10) / 256)
@@ -436,7 +459,7 @@ function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 	local fHue = floor(wndHue:FindChild("SliderBar"):GetValue()) / 100
 	local clrOverlay = RGBAToHex(self:HSVtoRGB(fHue, 1,1))
 	wndSatVal:SetBGColor(clrOverlay)
-	
+
 	-- Update Colors
 	local clrCode = RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness))
 	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrCode)
@@ -446,6 +469,7 @@ function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 		self:SetNewColor(wndChooser, clrCode)
 	else
 		wndChooser:GetData().tColorList[1] = clrCode
+		FireCallback(wndChooser)
 	end
 end
 
@@ -465,7 +489,7 @@ function GeminiColor:OnSatValueMove(wndHandler, wndControl)
 	elseif left > rightEdge then
 		left = rightEdge
 	end
-	
+
 	if top < -10 then
 		top = -10
 	elseif top > bottomEdge then
@@ -506,6 +530,7 @@ function GeminiColor:SetNewColor(wndChooser, strColorCode)
 	local data = wndChooser:GetData()
 	table.insert(data.tColorList, 1, strColorCode)
 	self:UpdateCurrPrevColors(wndChooser)
+	FireCallback(wndChooser)
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -514,22 +539,22 @@ end
 function GeminiColor:CreateColorDropdown(wndHost, strSkin)
 	-- wndHost = place holder window, used to get Window Name, Anchors and Offsets, and Parent
 	-- strSkin = "Holo" or "Metal" -- not case sensitive
-	
+
 	if wndHost == nil then Print("You must supply a valid window for argument #1."); return end
-	
+
 	local fLeftAnchor, fTopAnchor, fRightAnchor, fBottomAnchor = wndHost:GetAnchorPoints()
 	local fLeftOffset, fTopOffset, fRightOffset, fBottomOffset = wndHost:GetAnchorOffsets()
 	local strName = wndHost:GetName()
 	local wndParent = wndHost:GetParent()
 	wndHost:Destroy()
-	
+
 	local wndDD = Apollo.LoadForm(self.xmlDoc, "ColorDDForm", wndParent, self)
-	
+
 	if string.lower(strSkin) == string.lower("metal") then
 		wndDD:ChangeArt("CRB_Basekit:kitBtn_Dropdown_TextBaseHybrid")
 		--CRB_Basekit:kitBtn_List_MetalContextMenu
 	end
-	
+
 	local wndDDMenu = wndDD:FindChild("wnd_DDList")
 	for i, v in pairs(ktColors) do
 		local wndCurrColor = Apollo.LoadForm(self.xmlDoc,"ColorListItemForm",wndDDMenu,self)
@@ -542,11 +567,11 @@ function GeminiColor:CreateColorDropdown(wndHost, strSkin)
 	end
 	wndDDMenu:ArrangeChildrenVert()
 	wndDDMenu:Show(false)
-	
+
 	wndDD:SetAnchorPoints(fLeftAnchor, fTopAnchor, fRightAnchor, fBottomAnchor)
 	wndDD:SetAnchorOffsets(fLeftOffset, fTopOffset, fRightOffset, fBottomOffset)
 	wndDD:SetName(strName)
-		
+
 	return wndDD
 end
 
@@ -559,11 +584,11 @@ function GeminiColor:OnColorClick(wndHandler, wndControl) -- choose from DD list
 	local strColorName = wndControl:GetText()
 	local strColorCode = self:GetColorStringByName(strColorName)
 	strColorCode = "FF"..strColorCode
-	
+
 	local wndChooser = wndControl:GetParent():GetParent()		-- parent path: button -> list window -> Dropdown
 	wndChooser:FindChild("wnd_Text"):SetText(strColorName)
 	wndChooser:FindChild("wnd_Text"):SetTextColor(strColorCode)
-	
+
 	wndChooser:SetData({
 		strColor = strColorCode,
 		strName = strColorName,
@@ -574,7 +599,7 @@ end
 function GeminiColor:new(o)
 	o = o or {}
 	setmetatable(o, self)
-	self.__index = self 
+	self.__index = self
 	return o
 end
 
