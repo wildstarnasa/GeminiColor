@@ -168,12 +168,9 @@ function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 		}
 	else
 		-- Previous Signature: taOwner, fnstrCallback, bCustomColor, strInitialColor, ...
-		local tArg = {}
 		local bCustomColor = select(1,...)
 		strInitialColor = select(2,...)
-		for i=3,select("#",...) do
-			table.insert(tArg, select(i,...))
-		end
+		local tArg = {select(3,...)}
 
 		tData = {
 			owner = taOwner,
