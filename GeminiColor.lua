@@ -387,7 +387,7 @@ function GeminiColor:OnCancel(wndHandler, wndControl, eMouseButton )
 	local wndChooser = wndControl:GetParent()
 
 	local data = wndChooser:GetData()
-	data.tColorList[1] = data.strInitialColor
+	data.tColorList = {data.strInitialColor}
 
 	FireCallback(wndChooser)
 
