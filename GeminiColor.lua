@@ -384,7 +384,14 @@ function GeminiColor:OnOK(wndHandler, wndControl, eMouseButton)
 end
 
 function GeminiColor:OnCancel(wndHandler, wndControl, eMouseButton )
-	wndControl:GetParent():Show(false) -- hide the window
+	local wndChooser = wndControl:GetParent()
+
+	local data = wndChooser:GetData()
+	data.tColorList[1] = data.strInitialColor
+
+	FireCallback(wndChooser)
+
+	wndChooser:Show(false) -- hide the window
 end
 
 function GeminiColor:OnPickerShow(wndHandler, wndControl)
@@ -419,6 +426,7 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	self:SetRGB(wndChooser, self:HexToRGBAPerc(data.tColorList[1]))
 	self:SetHSV(wndChooser, data.tColorList[1])
 	self:UpdateCurrPrevColors(wndChooser)
+	FireCallback(wndChooser)
 end
 
 function GetCurrentColor(wndChooser)
