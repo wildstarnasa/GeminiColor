@@ -251,7 +251,7 @@ function GeminiColor:HexToRGBAPerc(hex)
 	end
 end
 
-local function HexToRGBA(hex)
+function GeminiColor:HexToRGBA(hex)
 	if string.len(hex) == 6 then
 		local rhex, ghex, bhex = string.sub(hex, 1,2), string.sub(hex, 3, 4), string.sub(hex, 5, 6)
 		-- return R,G,B number list
@@ -263,7 +263,7 @@ local function HexToRGBA(hex)
 	end
 end
 
-local function RGBAToHex(r, g, b, a)
+function GeminColor:RGBAToHex(r, g, b, a)
 	a = a or 255
 	return string.format("%02x%02x%02x%02x", a, r, g, b)
 end
@@ -423,7 +423,7 @@ function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
 	local wndChooser = wndControl:GetParent()
 	local data = wndChooser:GetData()
 	table.remove(data.tColorList, 1)
-	self:SetRGB(wndChooser, self:HexToRGBAPerc(data.tColorList[1]))
+	self:SetRGB(wndChooser, self:HexToRGBA(data.tColorList[1]))
 	self:SetHSV(wndChooser, data.tColorList[1])
 	self:UpdateCurrPrevColors(wndChooser)
 	FireCallback(wndChooser)
@@ -438,7 +438,7 @@ function GeminiColor:SetHSV(wndChooser, strHexColor)
 	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
 	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
 
-	local h, s, v, a = self:RGBtoHSV(HexToRGBA(strHexColor))
+	local h, s, v, a = self:RGBtoHSV(self:HexToRGBA(strHexColor))
 	local left, top, right, bottom = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
 
 	left = floor((s * 256) - 10)
@@ -446,7 +446,7 @@ function GeminiColor:SetHSV(wndChooser, strHexColor)
 	wndSatVal:FindChild("wnd_Loc"):SetAnchorOffsets(left, top, left + 20, top + 20)
 
 	wndHue:FindChild("SliderBar"):SetValue(h * 100)
-	local clrOverlay = RGBAToHex(self:HSVtoRGB(h, 1, 1))
+	local clrOverlay = self:RGBAToHex(self:HSVtoRGB(h, 1, 1))
 	wndSatVal:SetBGColor(clrOverlay)
 end
 
@@ -462,13 +462,13 @@ function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 	if fSaturation > 1 then fSaturation = 1 elseif fSaturation < 0 then fSaturation = 0 end
 	-- Hue
 	local fHue = floor(wndHue:FindChild("SliderBar"):GetValue()) / 100
-	local clrOverlay = RGBAToHex(self:HSVtoRGB(fHue, 1,1))
+	local clrOverlay = self:RGBAToHex(self:HSVtoRGB(fHue, 1,1))
 	wndSatVal:SetBGColor(clrOverlay)
 
 	-- Update Colors
-	local clrCode = RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness))
+	local clrCode = self:RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness))
 	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrCode)
-	self:SetRGB(wndChooser, self:HexToRGBAPerc(clrCode))
+	self:SetRGB(wndChooser, self:HexToRGBA(clrCode))
 
 	if bUpdatePrev then
 		self:SetNewColor(wndChooser, clrCode)
