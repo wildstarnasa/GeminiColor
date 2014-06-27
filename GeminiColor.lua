@@ -157,25 +157,36 @@ function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 
 	local strInitialColor, tData
 	if type(oCallbackOrOpt) == "table" then
+		if not oCallbackOrOpt.callback then
+			error("GeminiColor: Missing callback function")
+		end
 		strInitialColor = oCallbackOrOpt.strInitialColor
 		tData = {
 			owner = taOwner,
 			callback = oCallbackOrOpt.callback,
-			bCustomColor = oCallbackOrOpt.bCustomColor,
+			bCustomColor = oCallbackOrOpt.bCustomColor or false,
 			strInitialColor = strInitialColor,
 			args = {...},
 			tColorList = {strInitialColor},
 		}
+	else if type(oCallbackOrOpt) == "nil" then
+		error("GeminiColor: Missing callback function")
 	else
 		-- Previous Signature: taOwner, fnstrCallback, bCustomColor, strInitialColor, ...
+		local tArg
 		local bCustomColor = select(1,...)
-		strInitialColor = select(2,...)
-		local tArg = {select(3,...)}
+		if type(bCustomColor) ~= "boolean" then
+			strInitialColor = bCustomColor
+			tArg = select(2,...)
+		else
+			strInitialColor = select(2,...)
+			local tArg = {select(3,...)}
+		end
 
 		tData = {
 			owner = taOwner,
 			callback = oCallbackOrOpt,
-			bCustomColor = bCustomColor,
+			bCustomColor = bCustomColor or false,
 			strInitialColor = strInitialColor,
 			args = tArg,
 			tColorList = {strInitialColor},
