@@ -2,7 +2,7 @@ GeminiColor
 ===========
 
  A tool designed for adding color picking capabilities. Has options for preset or custom colors.
- 
+
 
 ## To Call: ##
     GeminiColor = Apollo.GetPackage("GeminiColor").tPackage
@@ -26,11 +26,11 @@ Shows a single use color picker
 -  ... - optional additional arguments to pass back to the callback handler
 
 
-This method returns a _reusable_ color picker. It does *not* show the picker, it only returns a window that represents the picker. 
+This method returns a _reusable_ color picker. It does *not* show the picker, it only returns a window that represents the picker.
 It is up to the caller to call _Show_ and possibly other methods (like _Destroy_) on the window as desired.
 
 Example:
-```
+```Lua
 function MyAddon:OnInitialize()
   GeminiColor = Apollo.GetPackage("GeminiColor").tPackage
   self.picker = GeminiColor:CreateColorPicker(self, "ColorPickerCallback", true, "ffff0000", "some", 4, "userdefined", "values")
@@ -87,10 +87,10 @@ end
 -  l - Lightness 0 - 1
 -  a - Alpha 0 - 1
 -  returns - List of RGBA percentage values
- 
+
 
 ## GeminiColor:RGBtoHSV(r, g, b, a) ##
- 
+
 -  r - Red 0 - 1
 -  g - Green 0 - 1
 -  b - Blue 0 - 1
@@ -117,7 +117,7 @@ end
 -  b - Blue 0 - 1
 -  a - Alpha 0 - 1
 -  returns - RGBA list, from 0 - 255
- 
+
 ## GeminiColor:RGBtoRGBperc(r,g,b,a) ##
 
 -  r - Red 0 - 255
