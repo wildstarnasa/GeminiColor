@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 10
+local MAJOR, MINOR = "GeminiColor", 11
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -451,6 +451,11 @@ function GeminiColor:SetRGB(wndChooser, R,G,B,A) -- update the RGB boxes in the 
 	if inputAlpha then
 		inputAlpha:SetText(A)
 	end
+	local strHex = self:RGBAToHex(R,G,B,A)
+	if not wndChooser:GetData().bAlpha then
+		strHex = strsub(strHex, 3)
+	end
+	wndChooser:FindChild("input_Hex"):SetText(strHex)
 end
 
 function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
@@ -583,6 +588,41 @@ function GeminiColor:SetNewColor(wndChooser, strColorCode)
 	tinsert(data.tColorList, 1, strColorCode)
 	self:UpdateCurrPrevColors(wndChooser)
 	FireCallback(wndChooser)
+end
+
+function GeminiColor:OnRGBAReturn(wndHandler, wndControl, strText)
+	local wndChooser = wndControl:GetParent():GetParent():GetParent()  -- ancestor chain: input -> DisplayContainer -> wnd_Custom-> GeminiChooserForm
+	local nText = strmatch(strText, "(%d+)")
+	if not nText or nText < 0 or nText > 255 then
+		self:SetRGB(wndChooser, self:HexToRGBA(wndChooser:GetData().tColorList[1]))
+		return
+	end
+	local wndParent = wndControl:GetParent()
+	local strNewHex = self:RGBAToHex(
+		wndParent:FindChild("input_Red"):GetText(),
+		wndParent:FindChild("input_Green"):GetText(),
+		wndParent:FindChild("input_Blue"):GetText(),
+		wndChooser:GetData().bAlpha and wndParent:FindChild("input_Alpha"):GetText() or nil
+	)
+	self:SetHSV(wndChooser, strNewHex)
+end
+
+function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
+	local wndChooser = wndControl:GetParent()
+	local strHex = strmatch(strText, "(%x+)")
+	local bAlpha = wndChooser:GetData().bAlpha
+	local nStrSize = bAlpha and 8 or 6
+
+	if not strHex or strlen(strHex) ~= nStrSize then
+		local strNewHex = wndChooser:GetData().tColorList[1]
+		if not bAlpha then strNewHex = strsub(strNewHex, 3) end
+		wndControl:SetText(strNewHex)
+		return
+	end
+
+	local strNewHex = bAlpha and strHex or ("ff" .. strHex)
+	self:SetHSV(wndChooser, strNewHex)
+	self:SetRGB(wndChooser, self:HexToRGBA(strNewHex))
 end
 
 ---------------------------------------------------------------------------------------------------
