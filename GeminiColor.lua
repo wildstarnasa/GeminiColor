@@ -605,8 +605,7 @@ function GeminiColor:OnRGBAReturn(wndHandler, wndControl, strText)
 		wndChooser:GetData().bAlpha and wndParent:FindChild("input_Alpha"):GetText() or nil
 	)
 	self:SetHSV(wndChooser, strNewHex)
-	self:UpdateCurrPrevColors(wndChooser)
-	FireCallback(wndChooser)
+	self:SetNewColor(wndChooser, strNewHex)
 end
 
 function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
@@ -625,8 +624,7 @@ function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
 	local strNewHex = bAlpha and strHex or ("ff" .. strHex)
 	self:SetHSV(wndChooser, strNewHex)
 	self:SetRGB(wndChooser, self:HexToRGBA(strNewHex))
-	self:UpdateCurrPrevColors(wndChooser)
-	FireCallback(wndChooser)
+	self:SetNewColor(wndChooser, strNewHex)
 end
 
 ---------------------------------------------------------------------------------------------------
