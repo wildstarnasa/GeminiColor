@@ -592,7 +592,7 @@ end
 
 function GeminiColor:OnRGBAReturn(wndHandler, wndControl, strText)
 	local wndChooser = wndControl:GetParent():GetParent():GetParent()  -- ancestor chain: input -> DisplayContainer -> wnd_Custom-> GeminiChooserForm
-	local nText = strmatch(strText, "(%d+)")
+	local nText = tonumber(strmatch(strText, "(%d+)"))
 	if not nText or nText < 0 or nText > 255 then
 		self:SetRGB(wndChooser, self:HexToRGBA(wndChooser:GetData().tColorList[1]))
 		return
@@ -605,6 +605,8 @@ function GeminiColor:OnRGBAReturn(wndHandler, wndControl, strText)
 		wndChooser:GetData().bAlpha and wndParent:FindChild("input_Alpha"):GetText() or nil
 	)
 	self:SetHSV(wndChooser, strNewHex)
+	self:UpdateCurrPrevColors(wndChooser)
+	FireCallback(wndChooser)
 end
 
 function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
@@ -623,6 +625,8 @@ function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
 	local strNewHex = bAlpha and strHex or ("ff" .. strHex)
 	self:SetHSV(wndChooser, strNewHex)
 	self:SetRGB(wndChooser, self:HexToRGBA(strNewHex))
+	self:UpdateCurrPrevColors(wndChooser)
+	FireCallback(wndChooser)
 end
 
 ---------------------------------------------------------------------------------------------------
