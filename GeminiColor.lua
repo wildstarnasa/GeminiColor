@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-local MAJOR, MINOR = "GeminiColor", 9
+local MAJOR, MINOR = "GeminiColor", 11
 -- Get a reference to the package information if any
 local APkg = Apollo.GetPackage(MAJOR)
 -- If there was an older version loaded we need to see if this is newer
@@ -156,7 +156,7 @@ end
 
 function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 	local wndChooser = Apollo.LoadForm(self.xmlDoc, "GeminiChooserForm", nil, self)
-	wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:Hue")
+	wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Hue"):SetSprite("GeminiColorSprites:Hue")
 
 	local wndSwatches = wndChooser:FindChild("wnd_SwatchContainer")
 	for i, v in pairs(ktColors) do
@@ -178,6 +178,7 @@ function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 			owner = taOwner,
 			callback = oCallbackOrOpt.callback,
 			bCustomColor = oCallbackOrOpt.bCustomColor or false,
+			bAlpha = oCallbackOrOpt.bAlpha or false,
 			strInitialColor = strInitialColor,
 			args = {...},
 			tColorList = {strInitialColor},
@@ -208,10 +209,27 @@ function GeminiColor:CreateColorPicker(taOwner, oCallbackOrOpt, ...)
 
 	wndChooser:SetData(tData)
 
+	local sValForm
+	if tData.bAlpha then
+		sValForm = "RGBADisplay"
+	else
+		sValForm = "RGBDisplay"
+		wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Alpha"):Show(false)
+	end
+	Apollo.LoadForm(self.xmlDoc, sValForm, wndChooser:FindChild("wnd_Custom"), self)
+
+	if not tData.bCustomColor then
+		wndChooser:FindChild("wnd_Custom"):Show(false)
+		local left, top, right, bottom = wndChooser:GetAnchorOffsets()
+		wndChooser:SetAnchorOffsets(right - 420, top, right, bottom)
+	end
+
 	if type(strInitialColor) == "string" then
+		self:SetRGB(wndChooser, self:HexToRGBA(strInitialColor))
 		self:SetHSV(wndChooser, strInitialColor)
 		self:UpdateCurrPrevColors(wndChooser)
 	else
+		self:SetRGB(wndChooser, self:HexToRGBA("ffffffff"))
 		wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor("ffffffff")
 		wndChooser:FindChild("wnd_ColorSwatch_Previous"):SetBGColor("ff000000")
 	end
@@ -417,17 +435,6 @@ function GeminiColor:OnCancel(wndHandler, wndControl, eMouseButton )
 	wndChooser:Show(false) -- hide the window
 end
 
-function GeminiColor:OnPickerShow(wndHandler, wndControl)
-	local wndChooser = wndControl:GetParent()
-	local clrOld = wndChooser:FindChild("wnd_ColorSwatch_Current"):GetBGColor():ToTable()
-	local strColorCode = self:RGBAPercToHex(clrOld.r, clrOld.g, clrOld.b, 1)
-	self:SetNewColor(wndChooser, strColorCode)
-end
-
-function GeminiColor:SetPrevCustomColor(wndHandler, wndControl)
-	self:OnPickerShow(wndHandler, wndControl)
-end
-
 function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
 	local crColor = wndControl:GetBGColor():ToTable()
 	local strColorCode = self:RGBAPercToHex(crColor.r, crColor.g, crColor.b, 1)
@@ -436,10 +443,19 @@ function GeminiColor:OnColorSwatchClick(wndHandler, wndControl)
 	self:SetNewColor(wndChooser, strColorCode)
 end
 
-function GeminiColor:SetRGB(wndChooser, R,G,B) -- update the RGB boxes in the color picker
+function GeminiColor:SetRGB(wndChooser, R,G,B,A) -- update the RGB boxes in the color picker
 	wndChooser:FindChild("input_Red"):SetText(R)
 	wndChooser:FindChild("input_Green"):SetText(G)
 	wndChooser:FindChild("input_Blue"):SetText(B)
+	local inputAlpha = wndChooser:FindChild("input_Alpha")
+	if inputAlpha then
+		inputAlpha:SetText(A)
+	end
+	local strHex = self:RGBAToHex(R,G,B,A)
+	if not wndChooser:GetData().bAlpha then
+		strHex = strsub(strHex, 3)
+	end
+	wndChooser:FindChild("input_Hex"):SetText(strHex)
 end
 
 function GeminiColor:UndoColorChange(wndHandler, wndControl, eMouseButton )
@@ -458,8 +474,9 @@ function GetCurrentColor(wndChooser)
 end
 
 function GeminiColor:SetHSV(wndChooser, strHexColor)
-	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
-	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
+	local wndSatVal = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_SatValue")
+	local wndHue = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Hue")
+	local wndAlpha = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Alpha")
 
 	local h, s, v, a = self:RGBtoHSV(self:HexToRGBA(strHexColor))
 	local left, top, right, bottom = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
@@ -469,13 +486,16 @@ function GeminiColor:SetHSV(wndChooser, strHexColor)
 	wndSatVal:FindChild("wnd_Loc"):SetAnchorOffsets(left, top, left + 20, top + 20)
 
 	wndHue:FindChild("SliderBar"):SetValue(h * 100)
+	wndAlpha:FindChild("SliderBar"):SetValue(a * 100)
+
 	local clrOverlay = self:RGBAToHex(self:HSVtoRGB(h, 1, 1))
 	wndSatVal:SetBGColor(clrOverlay)
 end
 
 function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
-	local wndSatVal = wndChooser:FindChild("wnd_WidgetContainer:wnd_SatValue")
-	local wndHue = wndChooser:FindChild("wnd_WidgetContainer:wnd_Hue")
+	local wndSatVal = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_SatValue")
+	local wndHue = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Hue")
+	local wndAlpha = wndChooser:FindChild("wnd_Custom:wnd_WidgetContainer:wnd_Alpha")
 
 	--Saturation and Lightness
 	local fSaturation, fLightness  = wndSatVal:FindChild("wnd_Loc"):GetAnchorOffsets()
@@ -488,9 +508,13 @@ function GeminiColor:UpdateHSV(wndChooser, bUpdatePrev)
 	local clrOverlay = self:RGBAToHex(self:HSVtoRGB(fHue, 1,1))
 	wndSatVal:SetBGColor(clrOverlay)
 
+	-- Alpha
+	local fAlpha = floor(wndAlpha:FindChild("SliderBar"):GetValue()) / 100
+
 	-- Update Colors
-	local clrCode = self:RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness))
+	local clrCode = self:RGBAToHex(self:HSVtoRGB(fHue, fSaturation, fLightness, fAlpha))
 	wndChooser:FindChild("wnd_ColorSwatch_Current"):SetBGColor(clrCode)
+
 	self:SetRGB(wndChooser, self:HexToRGBA(clrCode))
 
 	if bUpdatePrev then
@@ -503,7 +527,7 @@ end
 
 function GeminiColor:SatLightClick( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY, bDoubleClick, bStopPropagation )
 	wndControl:FindChild("wnd_Loc"):SetAnchorOffsets(nLastRelativeMouseX - 10, nLastRelativeMouseY - 10, nLastRelativeMouseX + 10, nLastRelativeMouseY + 10)
-	local wndChooser = wndControl:GetParent():GetParent()	-- ancestor chain: wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
+	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: wnd_SatValue -> wnd_WidgetContainer -> wnd_Custom -> GeminiChooserForm
 	self:UpdateHSV(wndChooser, true)
 end
 
@@ -525,12 +549,17 @@ function GeminiColor:OnSatValueMove(wndHandler, wndControl)
 	end
 
 	wndControl:SetAnchorOffsets(left,top,left + 20, top + 20)
-	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: wnd_Loc -> wnd_SatValue -> wnd_WidgetContainer -> wnd_ColorPicker -> GeminiChooserForm
+	local wndChooser = wndControl:GetParent():GetParent():GetParent():GetParent()	-- ancestor chain: wnd_Loc -> wnd_SatValue -> wnd_WidgetContainer -> wnd_Custom -> wGeminiChooserForm
 	self:UpdateHSV(wndChooser, true)
 end
 
 function GeminiColor:OnHueSliderChanged( wndHandler, wndControl, fNewValue, fOldValue)
-	local wndChooser = wndControl:GetParent():GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Hue -> wnd_WidgetContainer -> GeminiChooserForm
+	local wndChooser = wndControl:GetParent():GetParent():GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Hue -> wnd_WidgetContainer -> wnd_Custom -> GeminiChooserForm
+	self:UpdateHSV(wndChooser, false)
+end
+
+function GeminiColor:OnAlphaSliderChanged( wndHandler, wndControl, fNewValue, fOldValue)
+	local wndChooser = wndControl:GetParent():GetParent():GetParent():GetParent()	-- ancestor chain: SliderBar -> wnd_Alpha -> wnd_WidgetContainer -> GeminiChooserForm
 	self:UpdateHSV(wndChooser, false)
 end
 
@@ -559,6 +588,43 @@ function GeminiColor:SetNewColor(wndChooser, strColorCode)
 	tinsert(data.tColorList, 1, strColorCode)
 	self:UpdateCurrPrevColors(wndChooser)
 	FireCallback(wndChooser)
+end
+
+function GeminiColor:OnRGBAReturn(wndHandler, wndControl, strText)
+	local wndChooser = wndControl:GetParent():GetParent():GetParent()  -- ancestor chain: input -> DisplayContainer -> wnd_Custom-> GeminiChooserForm
+	local nText = tonumber(strmatch(strText, "(%d+)"))
+	if not nText or nText < 0 or nText > 255 then
+		self:SetRGB(wndChooser, self:HexToRGBA(wndChooser:GetData().tColorList[1]))
+		return
+	end
+	local wndParent = wndControl:GetParent()
+	local strNewHex = self:RGBAToHex(
+		wndParent:FindChild("input_Red"):GetText(),
+		wndParent:FindChild("input_Green"):GetText(),
+		wndParent:FindChild("input_Blue"):GetText(),
+		wndChooser:GetData().bAlpha and wndParent:FindChild("input_Alpha"):GetText() or nil
+	)
+	self:SetHSV(wndChooser, strNewHex)
+	self:SetNewColor(wndChooser, strNewHex)
+end
+
+function GeminiColor:OnHexReturn(wndHandler, wndControl, strText)
+	local wndChooser = wndControl:GetParent()
+	local strHex = strmatch(strText, "(%x+)")
+	local bAlpha = wndChooser:GetData().bAlpha
+	local nStrSize = bAlpha and 8 or 6
+
+	if not strHex or strlen(strHex) ~= nStrSize then
+		local strNewHex = wndChooser:GetData().tColorList[1]
+		if not bAlpha then strNewHex = strsub(strNewHex, 3) end
+		wndControl:SetText(strNewHex)
+		return
+	end
+
+	local strNewHex = bAlpha and strHex or ("ff" .. strHex)
+	self:SetHSV(wndChooser, strNewHex)
+	self:SetRGB(wndChooser, self:HexToRGBA(strNewHex))
+	self:SetNewColor(wndChooser, strNewHex)
 end
 
 ---------------------------------------------------------------------------------------------------
